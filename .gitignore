@@ -1,0 +1,33 @@
+# Data files
+*.csv
+*.sql.bak
+*.xlsx
+*.xls
+*.json
+!scripts/**/*.json
+
+# Logs
+*.log
+logs/
+
+# Temp files
+*.tmp
+*.swp
+*~
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
