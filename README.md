@@ -1,49 +1,66 @@
 # sample-service-migration
 
-Tools and scripts for migrating biobank sample database from DB2 to PostgreSQL.
+Tools and scripts for migrating biobank sample database from DB2 to PostgreSQL (targeting the new `sample-service` simplified schema).
 
 ## Overview
 
 This project contains:
-- **Schema mapping documentation** — how DB2 tables/columns map to PostgreSQL
-- **Data extraction scripts** — export data from DB2
-- **Transformation scripts** — convert and validate data for PostgreSQL
-- **Validation tools** — compare source and target data, check integrity
-- **Migration playbook** — step-by-step runbook for the actual migration
+- **Schema mapping documentation** — how DB2 tables/columns map to the new Postgres `sample-service` schema
+- **Data extraction via `exporter2026`** — reuses the complete, tested DB2→CSV tool
+- **Custom loader** — Java/Spring Boot app that transforms and loads CSVs into the target Postgres schema
+- **Validation tools** — compare source/target row counts, check FK/unique-constraint integrity
+- **Migration playbook** — step-by-step runbook for the actual cutover
+
+## Key design decisions
+
+- **Reuse `exporter2026` for extraction**: The org's purpose-built DB2→CSV exporter (already complete, tested) handles JDBC metadata introspection and FK→natural-key resolution. No custom extraction code needed.
+- **Custom loader (not importer2026)**: The target schema requires transformation logic (consolidating legacy per-sample-group DB2 tables into one row, enum remapping, sequence ID generation, explicit audit-column backfill) that a generic importer wouldn't have.
+- **Current location only**: Migrate only current `container_id`/`placecode` columns, not synthetic audit history. DB2 location history is reconstructed from `EVENT` rows (out of scope).
+- **Scope: 4 tables only**: `sample_type`, `container_type`, `container`, `sample` (matching `sample-service` M1+M2). Everything else (`EVENT`, `TASK`, annotations, batch lists, sample profiles, ID generators, consent/participant) is deferred until `sample-service` M3+ implements those entities.
 
 ## Project structure
 
 ```
 .
-├── docs/                          # Documentation
-│   ├── schema-mapping.md          # DB2 ↔ Postgres schema translation
-│   ├── migration-strategy.md      # Overall approach, timeline, rollback
-│   └── data-requirements.md       # Data types, transformations, validation
-├── scripts/
-│   ├── db2/                       # DB2 extraction (SQL, etc.)
-│   ├── postgres/                  # Postgres load scripts (SQL, etc.)
-│   └── validation/                # Data comparison & integrity checks
-├── tools/                         # Utility scripts (Python/bash/Java)
-└── tests/                         # Validation tests
+├── README.md                      (this file)
+├── docs/
+│   ├── schema-mapping.md          # DB2 ↔ sample-service Postgres mapping, detailed transformations
+│   ├── migration-strategy.md      # 3-phase cutover plan, timeline, rollback
+│   └── data-requirements.md       # Data type conversions, enum remapping rules, validation checklist
+├── export/
+│   └── tables.md                  # exporter2026 CLI invocations (one per source table/view)
+├── loader/                        # Custom loader app (Java 21 / Spring Boot / Gradle)
+│   ├── build.gradle
+│   ├── src/main/java/com/bcplatforms/samplemigration/
+│   │   ├── LoaderApplication.java
+│   │   ├── csv/            # CsvStreamReader (lift pattern from importer2026)
+│   │   ├── lookup/         # NaturalKeyResolver (queries target Postgres)
+│   │   ├── enums/          # SampleStatusMapper, ContainerBaseTypeMapper
+│   │   └── load/           # Entity loaders (ordered by FK dependency)
+│   └── src/test/java/...   # Testcontainers integration tests
+└── Makefile                       # Targets: export, load, validate, clean
 ```
 
-## Development
+## Quick start
+
+1. **Review the schema mapping**: `docs/schema-mapping.md`
+2. **Extract from DB2**: `make export` (uses `exporter2026`; see `export/tables.md` for CLI details)
+3. **Load into Postgres**: `make load` (runs the loader app against CSVs)
+4. **Validate**: `make validate` (row counts, FKs, enums, spot-checks)
+
+See `docs/migration-strategy.md` for the full 3-phase runbook and rollback plan.
+
+## Building the loader app
 
 ```bash
-make help          # Show all targets
-make plan          # Review migration strategy
+cd loader
+./gradlew build       # Compile and test
+./gradlew bootRun     # Run with Postgres and sample CSVs
 ```
 
-See `Makefile` for common tasks.
+## DB2 connectivity
 
-## Quick start (when migration begins)
-
-```bash
-make validate-source     # Check DB2 source data
-make extract-data        # Export from DB2
-make transform-data      # Prepare for Postgres
-make load-target         # Load into Postgres
-make verify              # Compare source ↔ target
-```
-
-See `docs/migration-strategy.md` for the full playbook.
+This machine doesn't have DB2 access. Once a DB2 connection is available:
+1. Confirm `BIOBANK3.VIEW_SAMPLE_MASTER` column list (flattened FKs)
+2. Run `exporter2026` against the live DB2 instance
+3. Feed output CSVs into the loader

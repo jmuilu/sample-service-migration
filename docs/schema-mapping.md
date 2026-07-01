@@ -1,59 +1,124 @@
 # DB2 ↔ Postgres Schema Mapping
 
-Maps the existing DB2 schema to the new PostgreSQL schema defined in `sample-service`.
+Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the new PostgreSQL `sample-service` schema (schema `sample`, 4 tables only).
 
 ## Overview
 
 | Aspect | DB2 | Postgres |
 |--------|-----|----------|
-| Database | `BIOBANK` | `bcsystem` (schema: `sample`) |
-| Character set | EBCDIC/ASCII | UTF-8 |
+| Databases & schemas | `BIOBANK`, `BCPROJECT`, `CORE`, `BCSUBJECT` | `bcsystem` (schema: `sample`; schema: `bcapp` for audit procedures) |
+| Character set | ASCII/EBCDIC | UTF-8 |
 | Date/Time | DB2 DATE/TIME/TIMESTAMP | PostgreSQL timestamp |
 | Numeric | DECIMAL, INTEGER | NUMERIC, BIGINT |
 | String | VARCHAR, CHAR | VARCHAR, TEXT |
-| Sequences | SEQUENCE | sequence (compatible) |
-| Constraints | FK, UK, CK | Same (fully compatible) |
+| Sequences | `nextval('seq_name')` | `nextval('seq_name')` — compatible |
+| Constraints | FK, UK, CK | Same — fully compatible |
 
-## Tables & Column Mappings
+## Core Table Mappings
 
-### SAMPLE table
+### 1. SAMPLE_TYPE: `BIOBANK3.SAMPLEGROUP` → `sample.sample_type`
 
-| DB2 Column | Type | → | Postgres Column | Type | Notes |
-|-----------|------|---|-----------------|------|-------|
-| SAMPLE_ID | BIGINT | → | id | BIGINT (PK) | Rename to `id`, generate via sequence |
-| SAMPLE_NUM | VARCHAR(64) | → | sampleid | VARCHAR(64) (UK) | Business ID, e.g. `OBB-2025-1` |
-| SUBJECT_ID | VARCHAR(64) | → | subjectid | VARCHAR(64) | Loose reference (no FK in either) |
-| SAMPLE_TYPE_ID | BIGINT | → | sample_type_id | BIGINT (FK) | Reference to SAMPLE_TYPE |
-| PARENT_SAMPLE_ID | BIGINT | → | parent_id | BIGINT (FK, self) | Aliquot parent |
-| STATUS | CHAR(32) | → | sample_status | VARCHAR(32) | Enum-backed, values: PENDING/AVAILABLE/NOT_AVAILABLE |
-| AMOUNT | DECIMAL(10,2) | → | amount | INTEGER | Unit: microliters (integer, no decimals) |
-| ... (more columns) | ... | → | ... | ... | See `sample-service` entity for full list |
-| (audit) | — | → | userstamp, created, version | VARCHAR(128), TIMESTAMP, INTEGER | Added by Postgres schema |
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
+|-----------|----------|-----------------|---------|---|
+| GROUPNR | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.sample_type_id_seq` |
+| NAME | VARCHAR(128) | name | VARCHAR(128) | Direct copy; UNIQUE constraint |
+| ABBREVIATION | VARCHAR(5) | abbreviation | VARCHAR(20) | Direct copy; UNIQUE constraint |
+| DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
+| USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original; DB2 audit value |
+| TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original; DB2 audit value |
+| (new) | — | version | INTEGER | Hardcode `1` for all migrated rows |
 
-### (Continue mapping for other core tables...)
+### 2. CONTAINER_TYPE: `BIOBANK3.CONTAINERTYPE` → `sample.container_type`
 
-- **SAMPLE_TYPE** — 1:1 mapping, add audit columns
-- **CONTAINER** — new location model (container_id/placecode instead of location_id)
-- **CONTAINER_TYPE** — new, basetype enum
-- (Other tables — to be detailed as schema stabilizes)
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
+|-----------|----------|-----------------|---------|---|
+| (surrogate PK) | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.container_type_id_seq` |
+| NAME | VARCHAR(64) | name | VARCHAR(64) | Direct copy; UNIQUE constraint |
+| BASETYPE | VARCHAR(32) | basetype | VARCHAR(32) | **ENUM REMAP**: lookup value in remap table; CHECK `IN ('SITE','FREEZER','RACK','SHELF','BOX','PLATE')` |
+| X | INTEGER | x | INTEGER | Direct copy; grid columns (0 = no grid) |
+| Y | INTEGER | y | INTEGER | Direct copy; grid rows (0 = no grid) |
+| DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
+| USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
+| TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
+| (new) | — | version | INTEGER | Hardcode `1` |
 
-## Key differences
+### 3. CONTAINER: `BIOBANK3.CONTAINER` → `sample.container`
 
-1. **Location model**: DB2 uses a discrete location_id FK; Postgres uses `container_id`/`placecode` pair — see `sample-service` ADR 0001.
-2. **Audit columns**: DB2 may not have `userstamp`/`created`/`version`; Postgres requires all three.
-3. **ID generation**: DB2 may use triggers; Postgres uses sequences with `@GeneratedValue(strategy = SEQUENCE)`.
-4. **Enums**: DB2 CHARs with check constraints; Postgres uses VARCHAR + check constraint matching Java enum values.
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
+|-----------|----------|-----------------|---------|---|
+| ID | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.container_id_seq` |
+| NAME | VARCHAR(64) | name | VARCHAR(64) | Direct copy; **barcode** — UNIQUE constraint |
+| DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
+| TYPE | VARCHAR(64) | container_type_id | BIGINT (FK) | **LOOKUP**: `TYPE` → `sample.container_type.name` → new `id` |
+| PARENT | BIGINT (self-FK) | parent_container_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT` → `CONTAINER.NAME` → new `id` in `sample.container`; nullable |
+| PLACECODE | VARCHAR(64) | placecode | VARCHAR(30) | Direct copy; nullable; part of UNIQUE `(parent_container_id, placecode)` |
+| USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
+| TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
+| (new) | — | version | INTEGER | Hardcode `1` |
 
-## Validation checklist
+**Note**: DB2 `CONTAINER` also has `X`, `Y` (grid dims) at the row level. New schema stores these only in `CONTAINER_TYPE`, not per container.
 
-- [ ] All DB2 tables identified and mapped
-- [ ] All column types confirmed to have Postgres equivalents
-- [ ] Null/non-null constraints documented
-- [ ] Unique constraints mapped
-- [ ] Foreign key relationships verified
-- [ ] Sequence/ID generation strategy aligned
-- [ ] Audit column strategy confirmed (backfill vs. trigger defaults)
-- [ ] Sample of real data extracted and type-checked in Postgres
+### 4. SAMPLE: `BIOBANK3.VIEW_SAMPLE_MASTER` (consolidates `SAMPLE_10002`, `SAMPLE_10003`, ...) → `sample.sample`
+
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
+|-----------|----------|-----------------|---------|---|
+| (surrogate PK) | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.sample_id_seq` |
+| SAMPLEID | VARCHAR(64) | sampleid | VARCHAR(64) | Direct copy; **business ID** — UNIQUE constraint |
+| SUBJECT | VARCHAR(64) | subjectid | VARCHAR(64) | Direct copy; loose reference (no FK), nullable |
+| SAMPLETYPE | VARCHAR(128) | sample_type_id | BIGINT (FK) | **LOOKUP**: `SAMPLETYPE` name → `sample.sample_type.name` → new `id` |
+| SAMPLE_STATUS | VARCHAR(32) | sample_status | VARCHAR(32) | **ENUM REMAP**: lookup in remap table; CHECK `IN ('PENDING','AVAILABLE','NOT_AVAILABLE')` |
+| AMOUNT | INTEGER | amount | INTEGER | Direct copy; nullable; unit: microliters |
+| CONCENTRATION | REAL | concentration | REAL | Direct copy; nullable |
+| REMARKS | VARCHAR(2000) | remarks | TEXT | Direct copy; nullable |
+| COMMENT | VARCHAR(255) | comment | VARCHAR(255) | Direct copy; nullable |
+| CONTAINER_NAME | VARCHAR(64) | container_id | BIGINT (FK) | **LOOKUP**: `CONTAINER_NAME` → `sample.container.name` → new `id`; nullable (samples may be unplaced) |
+| PLACECODE | VARCHAR(64) | placecode | VARCHAR(30) | Direct copy; nullable; part of UNIQUE `(container_id, placecode)` |
+| PARENT_SAMPLEID | VARCHAR(64) | parent_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT_SAMPLEID` → `sample.sample.sampleid` → new `id` in `sample.sample`; nullable (non-aliquots) |
+| USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
+| TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
+| (new) | — | version | INTEGER | Hardcode `1` |
+
+**Note**: DB2 uses multiple sample tables (`SAMPLE_10002`, `SAMPLE_10003`, ...) unified via `VIEW_SAMPLE_MASTER`. Export must target the view or an equivalent join that flattens parent/sibling/container references to natural-key strings.
+
+## Enum Remapping
+
+### SAMPLE_STATUS
+
+| DB2 value | → | Postgres check value | Notes |
+|-----------|---|---|---|
+| `AVAILABLE` | → | `AVAILABLE` | Direct |
+| `NOT_AVAILABLE` | → | `NOT_AVAILABLE` | Direct |
+| `PENDING` | → | `PENDING` | Direct |
+| *(any other)* | → | **FAIL** | Log unmapped value, halt migration — do not silently drop |
+
+### CONTAINER_BASETYPE
+
+| DB2 value | → | Postgres check value | Notes |
+|-----------|---|---|---|
+| `SITE` | → | `SITE` | Direct |
+| `FREEZER` | → | `FREEZER` | Direct |
+| `RACK` | → | `RACK` | Direct |
+| `SHELF` | → | `SHELF` | Direct |
+| `BOX` | → | `BOX` | Direct |
+| `PLATE` | → | `PLATE` | Direct |
+| *(any other)* | → | **FAIL** | Log unmapped value, halt migration |
+
+## Natural Key Resolution (FK Lookups)
+
+The loader will resolve all FKs via **natural keys**, not surrogate IDs:
+
+1. **`sample_type_id`**: lookup `sample_type` by `(name, abbreviation)` — both columns uniquely identify a row
+2. **`container_type_id`**: lookup `container_type` by `name`
+3. **`container_id`** (on sample): lookup `container` by `name` (barcode)
+4. **`parent_container_id`** (self): lookup `container` by `name` (barcode)
+5. **`parent_id`** (self on sample): lookup `sample` by `sampleid`
+
+All lookups happen **against the target Postgres schema**, which is assumed to be pre-populated or created by `sample-service`'s Liquibase migrations.
+
+## Open Items
+
+1. **`BIOBANK3.VIEW_SAMPLE_MASTER` column list**: confirm exact columns and whether `CONTAINER_NAME`, `SAMPLETYPE` (name), `PARENT_SAMPLEID` are already flattened or need custom export SQL. Requires live DB2 connection.
+2. **Unmapped BASETYPE/SAMPLE_STATUS values**: if legacy DB2 data contains values not in the remap tables above, the migration will fail loudly. Consult stakeholders to determine correct mapping for any new values.
 
 ## Next step
 
