@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: sample-service-migration-loader
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bcsystem
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  sql:
+    init:
+      mode: never
+
+logging:
+  level:
+    root: INFO
+    com.bcplatforms.samplemigration: DEBUG
