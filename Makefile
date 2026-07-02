@@ -29,11 +29,12 @@ extract-data:
 
 transform-data:
 	@echo "Transforming data for Postgres..."
-	@echo "TODO: Run transformation scripts (scripts/transformation/)"
+	@../../exporter2026/gradlew -p loader build
+	@echo "Transformation logic is part of the loader build/process."
 
 load-target:
 	@echo "Loading data into Postgres..."
-	@echo "TODO: Run Postgres load scripts (scripts/postgres/)"
+	@../../exporter2026/gradlew -p loader bootRun
 
 verify:
 	@echo "Verifying source ↔ target data..."

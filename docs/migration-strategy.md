@@ -92,9 +92,8 @@ High-level plan for migrating the biobank sample database from DB2 to PostgreSQL
 
 1. Review schema mapping (`schema-mapping.md`)
 2. Finalize data requirements (`data-requirements.md`)
-3. Build extraction scripts (`scripts/db2/`)
-4. Build transformation scripts (`scripts/transformation/`)
-5. Build load scripts (`scripts/postgres/`)
-6. Build validation queries (`scripts/validation/`)
-7. Run Phase 1 testing against staging Postgres
-8. Schedule cutover window
+3. Extract data from DB2 using `exporter2026` (see `export/tables.md`)
+4. Use `loader` app for transformation and loading into Postgres
+5. Run validation queries (compare source/target)
+6. Run Phase 1 testing against staging Postgres
+7. Schedule cutover window

@@ -14,7 +14,7 @@ This project contains:
 ## Key design decisions
 
 - **Reuse `exporter2026` for extraction**: The org's purpose-built DB2→CSV exporter (already complete, tested) handles JDBC metadata introspection and FK→natural-key resolution. No custom extraction code needed.
-- **Leverage `importer2026` for loading**: The `importer2026` tool will be used to load the CSV data into the target Postgres schema. This decision has been made to reuse existing tooling. The target schema requires transformation logic (consolidating legacy per-sample-group DB2 tables into one row, enum remapping, sequence ID generation, explicit audit-column backfill) that a generic importer wouldn't have so `importer2026` will be customized to support this.
+- **Leverage local services for loading**: The custom `loader` app leverages `importer2026` and `exporter2026` libraries via a Gradle composite build to transform and load CSV data into the target Postgres schema. The target schema requires complex transformation logic (consolidating legacy per-sample-group DB2 tables, enum remapping, sequence ID generation, explicit audit-column backfill) that are handled in the `loader` module while reusing shared components.
 - **Current location only**: Migrate only current `container_id`/`placecode` columns, not synthetic audit history. DB2 location history is reconstructed from `EVENT` rows (out of scope).
 - **Scope: 4 tables only**: `sample_type`, `container_type`, `container`, `sample` (matching `sample-service` M1+M2). Everything else (`EVENT`, `TASK`, annotations, batch lists, sample profiles, ID generators, consent/participant) is deferred until `sample-service` M3+ implements those entities.
 
@@ -30,7 +30,8 @@ This project contains:
 ├── export/
 │   └── tables.md                  # exporter2026 CLI invocations (one per source table/view)
 ├── loader/                        # Custom loader app (Java 21 / Spring Boot / Gradle)
-│   ├── build.gradle
+│   ├── build.gradle.kts           # Kotlin DSL build script
+│   ├── settings.gradle.kts        # Composite build configuration
 │   ├── src/main/java/com/bcplatforms/samplemigration/
 │   │   ├── LoaderApplication.java
 │   │   ├── csv/            # CsvStreamReader (lift pattern from importer2026)
@@ -44,18 +45,22 @@ This project contains:
 ## Quick start
 
 1. **Review the schema mapping**: `docs/schema-mapping.md`
-2. **Extract from DB2**: `make export` (uses `exporter2026`; see `export/tables.md` for CLI details)
-3. **Load into Postgres**: `make load` (runs the loader app against CSVs)
-4. **Validate**: `make validate` (row counts, FKs, enums, spot-checks)
+2. **Extract from DB2**: `make extract-data` (uses `exporter2026`; see `export/tables.md` for CLI details)
+3. **Load into Postgres**: `make load-target` (runs the loader app against CSVs)
+4. **Validate**: `make validate-source` or `make verify` (row counts, FKs, enums, spot-checks)
 
 See `docs/migration-strategy.md` for the full 3-phase runbook and rollback plan.
 
 ## Building the loader app
 
+The `loader` project uses a composite build to include `exporter2026`, `importer2026`, and `sample-service` as local dependencies. Since `loader` does not have its own Gradle wrapper, use the one from a sibling project or a local Gradle installation.
+
 ```bash
-cd loader
-./gradlew build       # Compile and test
-./gradlew bootRun     # Run with Postgres and sample CSVs
+# Using sibling gradlew
+../../exporter2026/gradlew -p loader build
+
+# Run the loader
+../../exporter2026/gradlew -p loader bootRun
 ```
 
 ## DB2 connectivity

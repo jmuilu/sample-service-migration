@@ -105,7 +105,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 
 ## Natural Key Resolution (FK Lookups)
 
-The loader will resolve all FKs via **natural keys**, not surrogate IDs:
+The `loader` app resolves all FKs via **natural keys**, not surrogate IDs. The logic is implemented in `com.bcplatforms.samplemigration.lookup.NaturalKeyResolver`.
 
 1. **`sample_type_id`**: lookup `sample_type` by `(name, abbreviation)` — both columns uniquely identify a row
 2. **`container_type_id`**: lookup `container_type` by `name`
