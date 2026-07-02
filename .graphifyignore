@@ -1,0 +1,8 @@
+# .graphifyignore
+target/
+build/
+.git/
+node_modules/
+*.log
+graphify-out/
+

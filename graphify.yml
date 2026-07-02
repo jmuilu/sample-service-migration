@@ -1,0 +1,20 @@
+# Graphify Configuration
+# https://graphify.net/
+
+# Defines the root directories for source code scanning.
+# This includes the main loader project and the included Gradle builds.
+sources:
+  - path: loader/src/main/java
+  - path: ../../importer2026/src/main/java
+  - path: ../../exporter2026/src/main/java
+  - path: ../sample-service/src/main/java
+
+# Exclude test files and other non-essential code from the graph.
+exclude:
+  - "**/test/**"
+  - "**/resources/**"
+
+# Configuration for the output graph
+output:
+  format: "json"
+  file: "project-graph.json"

@@ -42,6 +42,15 @@ This project contains:
 └── Makefile                       # Targets: export, load, validate, clean
 ```
 
+## Prerequisites
+
+Before you begin, ensure you have the following installed and configured:
+
+- **Java 21**: The `loader` application is built with Java 21.
+- **PostgreSQL**: A running PostgreSQL instance is required for the loader to connect to. The connection details are configured in `loader/src/main/resources/application.yaml`.
+- **Composite Build Paths**: The `loader` project uses a Gradle composite build to include local dependencies (`exporter2026`, `importer2026`, `sample-service`). You must have these projects cloned and located correctly relative to this project, as defined in `loader/settings.gradle.kts`.
+- **DB2 Access**: For the data extraction step (`make extract-data`), you will need access to the source DB2 database.
+
 ## Quick start
 
 1. **Review the schema mapping**: `docs/schema-mapping.md`
@@ -62,6 +71,33 @@ The `loader` project uses a composite build to include `exporter2026`, `importer
 # Run the loader
 ../../exporter2026/gradlew -p loader bootRun
 ```
+
+## Python Environment Setup
+
+This project uses `uv` for Python package management. To get started with the Python scripts for validation and data analysis, follow these steps:
+
+1. **Install `uv`**:
+   If you don't have `uv` installed, run the following command:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   uv venv
+   ```
+
+3. **Activate the virtual environment**:
+   ```bash
+   source .venv/bin/activate
+   ```
+
+4. **Install dependencies**:
+   ```bash
+   uv pip install -e .
+   ```
+
+Now you can run any Python scripts in the `scripts/` directory.
 
 ## DB2 connectivity
 
