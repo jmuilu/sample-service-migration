@@ -14,7 +14,7 @@ This project contains:
 ## Key design decisions
 
 - **Reuse `exporter2026` for extraction**: The org's purpose-built DB2→CSV exporter (already complete, tested) handles JDBC metadata introspection and FK→natural-key resolution. No custom extraction code needed.
-- **Custom loader (not importer2026)**: The target schema requires transformation logic (consolidating legacy per-sample-group DB2 tables into one row, enum remapping, sequence ID generation, explicit audit-column backfill) that a generic importer wouldn't have.
+- **Leverage `importer2026` for loading**: The `importer2026` tool will be used to load the CSV data into the target Postgres schema. This decision has been made to reuse existing tooling. The target schema requires transformation logic (consolidating legacy per-sample-group DB2 tables into one row, enum remapping, sequence ID generation, explicit audit-column backfill) that a generic importer wouldn't have so `importer2026` will be customized to support this.
 - **Current location only**: Migrate only current `container_id`/`placecode` columns, not synthetic audit history. DB2 location history is reconstructed from `EVENT` rows (out of scope).
 - **Scope: 4 tables only**: `sample_type`, `container_type`, `container`, `sample` (matching `sample-service` M1+M2). Everything else (`EVENT`, `TASK`, annotations, batch lists, sample profiles, ID generators, consent/participant) is deferred until `sample-service` M3+ implements those entities.
 
@@ -59,6 +59,8 @@ cd loader
 ```
 
 ## DB2 connectivity
+
+The DB2 database is available on port `50000`. Credentials for the test environment are stored in `.server/biobank-test.conf`.
 
 This machine doesn't have DB2 access. Once a DB2 connection is available:
 1. Confirm `BIOBANK3.VIEW_SAMPLE_MASTER` column list (flattened FKs)

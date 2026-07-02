@@ -31,3 +31,6 @@ venv/
 # Environment
 .env
 .env.local
+
+# Credentials
+.server/biobank-test.conf
