@@ -1,18 +1,19 @@
 # Global Preferences for sample-service-migration
 
-See `/Users/muilu/.claude/CLAUDE.md` for global settings. This file extends or overrides them for this project.
+This file extends or overrides global settings for this project.
 
-## Migration-specific guidance
+## ⚠️ CRITICAL: Read the Runbook First
+Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) at the start of the session. It contains the active Zero-Compile ETL migration execution playbook, credentials, paths, and status checklist.
 
-- Documentation first: before writing extraction/load scripts, document the schema mapping and transformation strategy in `docs/`.
-- Reversibility: every step must be reversible or have a rollback plan.
-- Data validation: compare row counts, checksums, and a sample of rows after each step.
-- Audit trail: log every extraction, transformation, and load action with timestamps and row counts.
+## Migration Guidance
+- **Zero-Compile ETL:** Do NOT write custom Java loader classes in the `loader/` directory. All migrations must use `exporter2026` + `importer2026` + YAML manifests and JS transformations in `config/`.
+- **Status:** `sample_type` migration is COMPLETE. The next table to migrate is `container_type`.
+- **Absolute Paths:** When running Gradle `bootRun` tasks for sibling projects, always specify absolute paths for CSV/manifest arguments.
+- **Postgres Driver:** Always append `--spring.datasource.driver-class-name=org.postgresql.Driver` to `importer2026` execution commands.
 
 ## Development Commands
-
-- Build all: `../../exporter2026/gradlew -p loader build`
-- Run loader: `../../exporter2026/gradlew -p loader bootRun`
-- Test: `../../exporter2026/gradlew -p loader test`
-- Clean: `../../exporter2026/gradlew -p loader clean`
-- List dependencies: `../../exporter2026/gradlew -p loader dependencies`
+- Build importer: `../importer2026/gradlew -p ../importer2026 build -x test`
+- Test importer: `../importer2026/gradlew -p ../importer2026 test`
+- Build legacy loader: `../../exporter2026/gradlew -p loader build`
+- Run legacy loader: `../../exporter2026/gradlew -p loader bootRun`
+- Clean work files: `make clean`
