@@ -49,7 +49,7 @@ Then inspect `container-query.sql` and adjust if needed.
 ### 4. Sample
 
 ```bash
-./gradlew bootRun --args='--table=BIOBANK3.VIEW_SAMPLE_MASTER --output=sample.csv'
+./gradlew bootRun --args='--table=BIOBANK3.VIEW_SAMPLE_MASTER --output=/Users/muilu/git/others/sample-service-migration/export/sample.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 ```
 
 **Expected columns**: `SAMPLEID`, `SUBJECT`, `SAMPLETYPE`, `SAMPLE_STATUS`, `AMOUNT`, `CONCENTRATION`, `REMARKS`, `COMMENT`, `CONTAINER_NAME`, `PLACECODE`, `PARENT_SAMPLEID`, `USERNAME`, `TIMELOG`

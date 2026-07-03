@@ -24,9 +24,9 @@ graph LR
 ## 2. Status of Migrations
 
 * **sample_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [sample_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_manifest.yaml) and [sample_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/sample_type_transform.js). Legacy `SampleTypeLoader.java` has been removed.
-* **container_type**: ❌ **PENDING**. Next up in the migration sequence.
-* **container**: ❌ **PENDING**. Depends on `container_type`.
-* **sample**: ❌ **PENDING**. Depends on `sample_type` and `container`.
+* **container_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_type_manifest.yaml) and [container_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/container_type_transform.js).
+* **container**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_manifest.yaml).
+* **sample**: ❌ **PENDING**. Next up in the migration sequence. Depends on `sample_type` and `container`.
 
 ---
 
@@ -57,6 +57,9 @@ Create `config/manifests/<target_table>_manifest.yaml` mapping the CSV to Postgr
 
 ### Step 4: Verification & Sequence Reset
 1. Empty the target table before starting: `TRUNCATE sample.target_table CASCADE;`
+   > [!WARNING]
+   > `TRUNCATE` is only used during local development, staging tests, and initial clean imports. 
+   > In production cutover or delta migrations, do **NOT** run truncate. The loader uses idempotent `UPSERT` (`ON CONFLICT DO UPDATE`) to safely merge changes and allow resuming runs from failures.
 2. Run the load step.
 3. After loading, reset the database sequence:
    ```sql
@@ -83,3 +86,5 @@ The generic importer (`importer2026`) has the following features pre-built and r
 - **FK Resolution**: Resolves natural keys to surrogate IDs automatically based on `foreignKey` mapping block in manifest.
 - **Self-Joins**: Caches resolved IDs and registers newly inserted rows so that parent-child relationships (like parent containers or parent samples) are resolved in a single pass (assuming parents come before children in the sorted CSV).
 - **JavaScript Engine**: Embedded Nashorn engine executes JS transformations natively inside JVM 21, allowing stateless transformations without IPC overhead.
+- **Row-by-Row RETURNING id & FK Caching (New)**: The importer inserts rows one-by-one appending `RETURNING id` and registers each successful insert's natural keys + generated ID in the resolver cache. This ensures self-referential rows (e.g. child containers referencing parent containers, or aliquots referencing parent samples) in the same file resolve their parent references dynamically.
+- **Nullable FKs (New)**: If all mapped CSV columns for a foreign key are empty/blank, the importer directly assigns a `NULL` target value without throwing "Missing foreign key" errors, supporting optional parent references and unplaced containers/samples.

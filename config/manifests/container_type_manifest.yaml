@@ -1,0 +1,24 @@
+import:
+  targetTable: "sample.container_type"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "name"
+  columnMappings:
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "BASETYPE"
+      column: "basetype"
+      type: "VARCHAR"
+      transformScript: "config/scripts/container_type_transform.js"
+      transformFunction: "transformBasetype"
+    - csv: "X"
+      column: "x"
+      type: "INTEGER"
+    - csv: "Y"
+      column: "y"
+      type: "INTEGER"
+    - csv: "DESCRIPTION"
+      column: "description"
+      type: "VARCHAR"

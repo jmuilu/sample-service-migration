@@ -1,0 +1,38 @@
+import:
+  targetTable: "sample.container"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "name"
+  columnMappings:
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "COMMENT"
+      column: "description"
+      type: "VARCHAR"
+    - csv: "TYPE"
+      column: "container_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.container_type"
+        parentNaturalKey:
+          - csv: "TYPE"
+            column: "name"
+    - csv: "PARENT_NAME"
+      column: "parent_container_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.container"
+        parentNaturalKey:
+          - csv: "PARENT_NAME"
+            column: "name"
+    - csv: "PLACECODE"
+      column: "placecode"
+      type: "VARCHAR"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

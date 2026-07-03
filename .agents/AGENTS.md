@@ -10,9 +10,9 @@ Tämä tiedosto sisältää projektikohtaiset tekoälysäännöt ja parhaat käy
 *   **Muutoksista ilmoittaminen (Notification on major changes):** Jos huomaat tarpeen tehdä suurempia koodimuutoksia tai arkkitehtonisesti merkittäviä laajennuksia geneerisiin `importer2026`- tai `exporter2026`-työkaluihin, **ilmoita tästä aina etukäteen käyttäjälle** ja odota vahvistusta ennen muutosten tekemistä.
 
 ## 2. Status of Migrations
-*   `sample_type` migraatio on **VALMIS** ja testattu.
-*   Seuraava siirrettävä taulu on `container_type` (lähde: `BIOBANK3.CONTAINERTYPE` -> kohde: `sample.container_type`).
-*   Seuraa tarkasti [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) -tiedoston Checklist-vaiheita.
+* `sample_type`, `container_type` ja `container` migraatiot ovat **VALMIIT** ja testattu.
+* Seuraava siirrettävä taulu on `sample` (lähde: `BIOBANK3.VIEW_SAMPLE_MASTER` -> kohde: `sample.sample`).
+* Seuraa tarkasti [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) -tiedoston Checklist-vaiheita.
 
 ## 3. Tool Execution Details
 *   **Postgres-ajuri:** Kun suoritat `importer2026` gradle-ajona tai JAR-tiedostona PostgreSQL-kantaan, lisää aina mukaan Postgres-ajurin pakotus:
