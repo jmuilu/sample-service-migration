@@ -1,5 +1,8 @@
 # Tool Integration Guide
 
+> [!IMPORTANT]
+> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
+
 This document provides guidance on how and why to use the specific tools included in this project.
 
 ## `graphify` (Source Code Analysis)

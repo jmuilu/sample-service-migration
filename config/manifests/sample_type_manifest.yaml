@@ -1,0 +1,24 @@
+import:
+  targetTable: "sample.sample_type"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "name"
+  columnMappings:
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "ABBREVIATION"
+      column: "abbreviation"
+      type: "VARCHAR"
+      transformScript: "config/scripts/sample_type_transform.js"
+      transformFunction: "transformAbbreviation"
+    - csv: "DESCRIPTION"
+      column: "description"
+      type: "VARCHAR"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

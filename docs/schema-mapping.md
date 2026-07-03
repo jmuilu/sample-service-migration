@@ -123,12 +123,12 @@ Actual distinct values in DB2 `CONTAINERTYPE` include several legacy/specialty v
    - `SAMPLEID` (VARCHAR 64), `SUBJECT` (VARCHAR 64), `AMOUNT` (INTEGER), `CONCENTRATION` (REAL), `USERNAME` (VARCHAR 128), and `TIMELOG` (TIMESTAMP).
 
 2. **Unmapped BASETYPE/SAMPLE_STATUS values verified (Resolved)**:
-   - **`SAMPLE_STATUS`**: The values are `'Available'`, `'Not available'`, and `'Pending'`. Normalization in `SampleStatusMapper.java` must be updated to handle the space-to-underscore replacement for `'Not available'`.
-   - **`CONTAINER_BASETYPE`**: Legacy containers exist with basetypes `'no-location'`, `'trash'`, and `'used'`. We must either extend the target schema/Java enums, map these to a standard type like `SITE`, or filter them out during extraction.
+   - **`SAMPLE_STATUS`**: The values are `'Available'`, `'Not available'`, and `'Pending'`. Normalization is handled via JavaScript/SpEL scripts in the `importer2026` pipeline (e.g. converting space to underscore and uppercase).
+   - **`CONTAINER_BASETYPE`**: Legacy containers exist with basetypes `'no-location'`, `'trash'`, and `'used'`. These are mapped to standard types (e.g. `SITE`) using script-based rules during import.
 
 ## Natural Key Resolution (FK Lookups)
 
-The `loader` app resolves all FKs via **natural keys**, not surrogate IDs. The logic is implemented in `com.bcplatforms.samplemigration.lookup.NaturalKeyResolver`.
+The `importer2026` application resolves all FKs via **natural keys**, not surrogate IDs, as defined in the YAML manifest files.
 
 1. **`sample_type_id`**: lookup `sample_type` by `(name, abbreviation)` — both columns uniquely identify a row
 2. **`container_type_id`**: lookup `container_type` by `name`

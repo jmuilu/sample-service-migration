@@ -9,7 +9,7 @@ dependencies = [
     "psycopg2-binary~=2.9",
     "sqlalchemy~=2.0",
     "ipython~=8.26",
-    "graphify~=0.3",
+    "graphifyy[mcp]~=0.3",
 ]
 
 [project.optional-dependencies]
@@ -18,3 +18,7 @@ dev = [
     "black~=24.4",
     "ruff~=0.5",
 ]
+
+[tool.setuptools]
+packages = []
+

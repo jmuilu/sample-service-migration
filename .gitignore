@@ -42,3 +42,11 @@ venv/
 
 # Credentials
 .server/biobank-test.conf
+
+# Java Gradle build outputs
+loader/build/
+build/
+
+# Python packaging
+*.egg-info/
+sample_service_migration.egg-info/

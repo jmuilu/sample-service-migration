@@ -19,8 +19,8 @@ High-level plan for migrating the biobank sample database from DB2 to PostgreSQL
 
 ### 1.3 Build extraction/load scripts
 - [ ] DB2 extraction scripts (SQL, bulk unload, or ODBC dumps)
-- [ ] Data transformation logic (Python/SQL scripts to clean, normalize, convert)
-- [ ] Postgres load scripts (COPY or INSERT, in dependency order)
+- [ ] Data transformation manifests and JavaScript/SpEL scripts (stored in `config/`)
+- [ ] Generic `importer2026` load configurations and schemas
 - [ ] Validation queries (compare source/target row counts, checksums, sample rows)
 - [ ] Rollback procedures (documented, tested)
 
@@ -93,7 +93,7 @@ High-level plan for migrating the biobank sample database from DB2 to PostgreSQL
 1. Review schema mapping (`schema-mapping.md`)
 2. Finalize data requirements (`data-requirements.md`)
 3. Extract data from DB2 using `exporter2026` (see `export/tables.md`)
-4. Use `loader` app for transformation and loading into Postgres
+4. Apply transformations via project-specific JS/SpEL scripts and load data into Postgres using the generic `importer2026` tool (see `config/`)
 5. Run validation queries (compare source/target)
 6. Run Phase 1 testing against staging Postgres
 7. Schedule cutover window

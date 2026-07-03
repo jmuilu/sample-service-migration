@@ -68,7 +68,8 @@ build-graph:
 
 start-graphify-server: build-graph
 	@echo "Launching Graphify MCP server. Press Ctrl+C to stop."
-	@python3 -m graphify.serve graphify-out/graph.json
+	@.venv/bin/python3 -m graphify.serve graphify-out/graph.json
+
 
 clean:
 	@echo "Removing extracted/transformed data files..."
