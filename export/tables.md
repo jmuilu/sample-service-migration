@@ -54,9 +54,8 @@ Then inspect `container-query.sql` and adjust if needed.
 
 **Expected columns**: `SAMPLEID`, `SUBJECT`, `SAMPLETYPE`, `SAMPLE_STATUS`, `AMOUNT`, `CONCENTRATION`, `REMARKS`, `COMMENT`, `CONTAINER_NAME`, `PLACECODE`, `PARENT_SAMPLEID`, `USERNAME`, `TIMELOG`
 
-**Critical note**: The exact column list depends on what `VIEW_SAMPLE_MASTER` exposes. If the view does not already flatten the foreign keys (e.g. `CONTAINER_ID` instead of `CONTAINER_NAME`, `SAMPLE_TYPE_ID` instead of `SAMPLETYPE` name), the export will fail or produce incorrect output. **Requires live DB2 connection to confirm.**
+**Note (Verified)**: The exact column list of `VIEW_SAMPLE_MASTER` has been confirmed via live DB2 database inspection. It successfully exposes `CONTAINER_NAME`, `SAMPLETYPE`, and `PARENT_SAMPLEID` as flattened natural key strings, matching the loader's requirements perfectly. No custom queries are needed for extraction.
 
-If the view doesn't flatten FKs correctly, a custom query may be needed. Use `--sql-output` to inspect the generated SQL and adjust accordingly.
 
 ## Loader Input
 

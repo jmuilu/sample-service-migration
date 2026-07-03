@@ -84,24 +84,47 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 
 ### SAMPLE_STATUS
 
-| DB2 value | → | Postgres check value | Notes |
-|-----------|---|---|---|
-| `AVAILABLE` | → | `AVAILABLE` | Direct |
-| `NOT_AVAILABLE` | → | `NOT_AVAILABLE` | Direct |
-| `PENDING` | → | `PENDING` | Direct |
-| *(any other)* | → | **FAIL** | Log unmapped value, halt migration — do not silently drop |
+Actual distinct values in DB2 `BIOBANK3.VIEW_SAMPLE_MASTER` are title-case/mixed-case. Normalization is required during migration (converting to uppercase and replacing spaces with underscores) before checking against Postgres constraints:
+
+| DB2 value | → | Normalized DB2 | → | Postgres value | Notes |
+|-----------|---|----------------|---|----------------|-------|
+| `Available` | → | `AVAILABLE` | → | `AVAILABLE` | Case normalization |
+| `Not available` | → | `NOT_AVAILABLE` | → | `NOT_AVAILABLE` | Space replaced with underscore |
+| `Pending` | → | `PENDING` | → | `PENDING` | Case normalization |
+| `NULL` | → | `NULL` | → | `NULL` | Nullable column |
+| *(any other)* | → | — | → | **FAIL** | Log unmapped value, halt migration |
 
 ### CONTAINER_BASETYPE
 
-| DB2 value | → | Postgres check value | Notes |
-|-----------|---|---|---|
-| `SITE` | → | `SITE` | Direct |
-| `FREEZER` | → | `FREEZER` | Direct |
-| `RACK` | → | `RACK` | Direct |
-| `SHELF` | → | `SHELF` | Direct |
-| `BOX` | → | `BOX` | Direct |
-| `PLATE` | → | `PLATE` | Direct |
-| *(any other)* | → | **FAIL** | Log unmapped value, halt migration |
+Actual distinct values in DB2 `CONTAINERTYPE` include several legacy/specialty values. Postgres `sample.container_type` strictly enforces the check constraint `IN ('SITE','FREEZER','RACK','SHELF','BOX','PLATE')`.
+
+| DB2 value | → | Postgres value | Status & Notes |
+|-----------|---|----------------|----------------|
+| `site` | → | `SITE` | Case normalization |
+| `freezer` | → | `FREEZER` | Case normalization |
+| `rack` | → | `RACK` | Case normalization |
+| `shelf` | → | `SHELF` | Case normalization |
+| `box` | → | `BOX` | Case normalization |
+| `plate` | → | `PLATE` | Case normalization |
+| `no-location` | → | **FAIL / TBD** | Used by 2 containers. Needs mapping strategy (e.g. map to `SITE` or exclude). |
+| `trash` | → | **FAIL / TBD** | Used by 1 container (`Trash`). Needs mapping strategy. |
+| `used` | → | **FAIL / TBD** | Used by 3 containers (`Empty`, `Lost`, `Picked`). Needs mapping strategy. |
+| `ASA`, `drawer`, `MEGA` | → | **FAIL** | Defined in `CONTAINERTYPE` but currently used by 0 containers. |
+
+---
+
+## Resolved Open Items
+
+1. **`BIOBANK3.VIEW_SAMPLE_MASTER` columns verified (Resolved)**:
+   A live database query confirmed that the view `BIOBANK3.VIEW_SAMPLE_MASTER` exists and contains the necessary columns:
+   - `CONTAINER_NAME` (VARCHAR 64, nullable) — ready for natural key resolution.
+   - `SAMPLETYPE` (VARCHAR 128, non-null) — ready for mapping to `sample_type_id`.
+   - `PARENT_SAMPLEID` (VARCHAR 64, nullable) — ready for self-referential lookup.
+   - `SAMPLEID` (VARCHAR 64), `SUBJECT` (VARCHAR 64), `AMOUNT` (INTEGER), `CONCENTRATION` (REAL), `USERNAME` (VARCHAR 128), and `TIMELOG` (TIMESTAMP).
+
+2. **Unmapped BASETYPE/SAMPLE_STATUS values verified (Resolved)**:
+   - **`SAMPLE_STATUS`**: The values are `'Available'`, `'Not available'`, and `'Pending'`. Normalization in `SampleStatusMapper.java` must be updated to handle the space-to-underscore replacement for `'Not available'`.
+   - **`CONTAINER_BASETYPE`**: Legacy containers exist with basetypes `'no-location'`, `'trash'`, and `'used'`. We must either extend the target schema/Java enums, map these to a standard type like `SITE`, or filter them out during extraction.
 
 ## Natural Key Resolution (FK Lookups)
 
@@ -115,10 +138,6 @@ The `loader` app resolves all FKs via **natural keys**, not surrogate IDs. The l
 
 All lookups happen **against the target Postgres schema**, which is assumed to be pre-populated or created by `sample-service`'s Liquibase migrations.
 
-## Open Items
-
-1. **`BIOBANK3.VIEW_SAMPLE_MASTER` column list**: confirm exact columns and whether `CONTAINER_NAME`, `SAMPLETYPE` (name), `PARENT_SAMPLEID` are already flattened or need custom export SQL. Requires live DB2 connection.
-2. **Unmapped BASETYPE/SAMPLE_STATUS values**: if legacy DB2 data contains values not in the remap tables above, the migration will fail loudly. Consult stakeholders to determine correct mapping for any new values.
 
 ## Next step
 

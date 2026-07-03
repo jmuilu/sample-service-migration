@@ -101,9 +101,19 @@ Now you can run any Python scripts in the `scripts/` directory.
 
 ## DB2 connectivity
 
-The DB2 database is available on port `50000`. Credentials for the test environment are stored in `.server/biobank-test.conf`.
+The DB2 database is available on `localhost` (port `50000`), with database name `BCDEMO` accessed as user `db2inst1`. Credentials for the test environment are stored in `.server/biobank-test.conf`.
 
-This machine doesn't have DB2 access. Once a DB2 connection is available:
+A local connection is available, and you can interact with it via the `db2-biobank-test` MCP server.
+
+### Source Database Statistics
+Current counts from the DB2 source database:
+- **Total Participants** (`BBVIEW.PARTICIPANT`): **806,265**
+- **Insight Project Participants** (`BCPROJECT.INSIGHT_PROJECT_PARTICIPANT`): **2,022**
+- **Subjects** (`BCDEMO.SUBJECTS`): **29**
+- **Subjects 2** (`BCDEMO.SUBJECTS2`): **764**
+
+### Next Steps
 1. Confirm `BIOBANK3.VIEW_SAMPLE_MASTER` column list (flattened FKs)
 2. Run `exporter2026` against the live DB2 instance
 3. Feed output CSVs into the loader
+
