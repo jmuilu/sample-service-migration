@@ -7,6 +7,7 @@ Tämä tiedosto sisältää projektikohtaiset tekoälysäännöt ja parhaat käy
 ## 1. Migration Architecture: Generic ETL (Zero-Compile)
 *   **Ei Java-lataajia:** Älä kirjoita uutta custom Java-latauskoodia `loader/src/...` hakemistoon. Kaikki uudet taulumigraatiot suoritetaan geneerisen `importer2026`-työkalun, YAML-manifestien ja JavaScript-transformaatioiden avulla.
 *   **Työtilan tiedostot:** Kaikki uudet manifestit tallennetaan kansioon `config/manifests/` ja transformaatiot kansioon `config/scripts/`.
+*   **Muutoksista ilmoittaminen (Notification on major changes):** Jos huomaat tarpeen tehdä suurempia koodimuutoksia tai arkkitehtonisesti merkittäviä laajennuksia geneerisiin `importer2026`- tai `exporter2026`-työkaluihin, **ilmoita tästä aina etukäteen käyttäjälle** ja odota vahvistusta ennen muutosten tekemistä.
 
 ## 2. Status of Migrations
 *   `sample_type` migraatio on **VALMIS** ja testattu.
