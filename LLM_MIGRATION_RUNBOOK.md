@@ -25,7 +25,7 @@ graph LR
 
 * **sample_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [sample_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_manifest.yaml) and [sample_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/sample_type_transform.js). Legacy `SampleTypeLoader.java` has been removed.
 * **container_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_type_manifest.yaml) and [container_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/container_type_transform.js).
-* **container**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_manifest.yaml).
+* **container**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_manifest.yaml). Note: Because containers contain self-referential parent-child relationships, `--sort-self-joins` must be used during import to guarantee correct parent resolution.
 * **sample**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [sample_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_manifest.yaml) and [sample_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/sample_transform.js).
 
 ---
@@ -49,10 +49,11 @@ If the table has columns requiring transformation (like enums or string cleanup)
 ### Step 3: Define Manifest & Load (via `importer2026`)
 Create `config/manifests/<target_table>_manifest.yaml` mapping the CSV to Postgres.
 * **Important:** Always override the driver class name to Postgres when running `importer2026`, as the default in its `application.properties` is DB2: `--spring.datasource.driver-class-name=org.postgresql.Driver`
+* If the table contains self-referential parent-child foreign keys (specifically `sample` or `container`), always append the `--sort-self-joins` command-line argument.
 * Always use absolute paths for the CSV and manifest parameters when running via Gradle, as the working directory switches to the sibling folder:
 ```bash
 # Path: /Users/muilu/git/others/sample-service-migration
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/src_table.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/target_table_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/src_table.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/target_table_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
 ```
 
 ### Step 4: Verification & Sequence Reset

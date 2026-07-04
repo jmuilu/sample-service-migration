@@ -18,6 +18,7 @@ Tämä tiedosto sisältää projektikohtaiset tekoälysäännöt ja parhaat käy
     `--spring.datasource.driver-class-name=org.postgresql.Driver`
 *   **Polut:** Koska Gradle siirtää työhakemiston suoritettavan projektin alikansioon, käytä aina absoluuttisia tiedostopolkuja argumenteissa `--csv` ja `--manifest`.
 *   **Sekvenssien nollaus:** Aina kun taulu on siirretty, resetoi sen PostgreSQL-sekvenssi välittömästi.
+*   **Self-join lajittelu:** Jos taulussa on itsereferenssejä (kuten `sample` ja `container`), käytä aina `--sort-self-joins` vipua ladatessasi, jotta parent-ID:t ratkeavat dynaamisesti oikeassa järjestyksessä.
 
 ---
 

@@ -11,6 +11,7 @@ Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-ser
 - **Notify on Shared Tool Changes:** You MUST notify the user and obtain confirmation before introducing any major architectural changes or large refactorings inside the generic `importer2026` or `exporter2026` projects.
 - **Absolute Paths:** When running Gradle `bootRun` tasks for sibling projects, always specify absolute paths for CSV/manifest arguments.
 - **Postgres Driver:** Always append `--spring.datasource.driver-class-name=org.postgresql.Driver` to `importer2026` execution commands.
+- **Self-join sorting:** Always use `--sort-self-joins` when loading tables with self-referential parent-child foreign keys (specifically `sample` and `container`).
 
 ## Development Commands
 - Build importer: `../importer2026/gradlew -p ../importer2026 build -x test`
