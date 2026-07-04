@@ -7,7 +7,7 @@ Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-ser
 
 ## Migration Guidance
 - **Zero-Compile ETL:** Do NOT write custom Java loader classes in the `loader/` directory. All migrations must use `exporter2026` + `importer2026` + YAML manifests and JS transformations in `config/`.
-- **Status:** `sample_type`, `container_type` and `container` migrations are COMPLETE. The next table to migrate is `sample`.
+- **Status:** `sample_type`, `container_type`, `container` and `sample` migrations are COMPLETE. All 4 core tables are successfully migrated.
 - **Notify on Shared Tool Changes:** You MUST notify the user and obtain confirmation before introducing any major architectural changes or large refactorings inside the generic `importer2026` or `exporter2026` projects.
 - **Absolute Paths:** When running Gradle `bootRun` tasks for sibling projects, always specify absolute paths for CSV/manifest arguments.
 - **Postgres Driver:** Always append `--spring.datasource.driver-class-name=org.postgresql.Driver` to `importer2026` execution commands.

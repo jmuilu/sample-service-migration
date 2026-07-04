@@ -26,7 +26,7 @@ graph LR
 * **sample_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [sample_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_manifest.yaml) and [sample_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/sample_type_transform.js). Legacy `SampleTypeLoader.java` has been removed.
 * **container_type**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_type_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_type_manifest.yaml) and [container_type_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/container_type_transform.js).
 * **container**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [container_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/container_manifest.yaml).
-* **sample**: ❌ **PENDING**. Next up in the migration sequence. Depends on `sample_type` and `container`.
+* **sample**: ✅ **COMPLETE**. Migrated successfully using the generic ETL method with [sample_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_manifest.yaml) and [sample_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/sample_transform.js).
 
 ---
 
@@ -88,3 +88,4 @@ The generic importer (`importer2026`) has the following features pre-built and r
 - **JavaScript Engine**: Embedded Nashorn engine executes JS transformations natively inside JVM 21, allowing stateless transformations without IPC overhead.
 - **Row-by-Row RETURNING id & FK Caching (New)**: The importer inserts rows one-by-one appending `RETURNING id` and registers each successful insert's natural keys + generated ID in the resolver cache. This ensures self-referential rows (e.g. child containers referencing parent containers, or aliquots referencing parent samples) in the same file resolve their parent references dynamically.
 - **Nullable FKs (New)**: If all mapped CSV columns for a foreign key are empty/blank, the importer directly assigns a `NULL` target value without throwing "Missing foreign key" errors, supporting optional parent references and unplaced containers/samples.
+- **Topological Sorting (`--sort-self-joins`) (New)**: The `--sort-self-joins` command-line argument enables topological sorting of CSV rows prior to import. It constructs a dependency graph using the self-referencing foreign keys defined in the manifest, ensuring parents are imported before children. It falls back gracefully and warns if cyclic dependencies are detected.
