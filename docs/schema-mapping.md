@@ -40,6 +40,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
+| (new) | — | temperature_celsius | REAL | Hardcode default `21.0` |
 | (new) | — | version | INTEGER | Hardcode `1` |
 
 ### 3. CONTAINER: `BIOBANK3.CONTAINER` → `sample.container`
@@ -51,7 +52,8 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
 | TYPE | VARCHAR(64) | container_type_id | BIGINT (FK) | **LOOKUP**: `TYPE` → `sample.container_type.name` → new `id` |
 | PARENT | BIGINT (self-FK) | parent_container_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT` → `CONTAINER.NAME` → new `id` in `sample.container`; nullable |
-| PLACECODE | VARCHAR(64) | placecode | VARCHAR(30) | Direct copy; nullable; part of UNIQUE `(parent_container_id, placecode)` |
+| PLACECODE | VARCHAR(64) | placecode | VARCHAR(16) | Direct copy; nullable; part of UNIQUE `(parent_container_id, placecode)` |
+| TEMPERATURE | DOUBLE | temperature_celsius | REAL | Direct copy; nullable |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
 | (new) | — | version | INTEGER | Hardcode `1` |
@@ -72,7 +74,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | REMARKS | VARCHAR(2000) | remarks | TEXT | Direct copy; nullable |
 | COMMENT | VARCHAR(255) | comment | VARCHAR(255) | Direct copy; nullable |
 | CONTAINER_NAME | VARCHAR(64) | container_id | BIGINT (FK) | **LOOKUP**: `CONTAINER_NAME` → `sample.container.name` → new `id`; nullable (samples may be unplaced) |
-| PLACECODE | VARCHAR(64) | placecode | VARCHAR(30) | Direct copy; nullable; part of UNIQUE `(container_id, placecode)` |
+| PLACECODE | VARCHAR(64) | placecode | VARCHAR(16) | Direct copy; nullable; part of UNIQUE `(container_id, placecode)` |
 | PARENT_SAMPLEID | VARCHAR(64) | parent_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT_SAMPLEID` → `sample.sample.sampleid` → new `id` in `sample.sample`; nullable (non-aliquots) |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
