@@ -1,0 +1,25 @@
+import:
+  targetTable: "sample.cv_property_type"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "term"
+  columnMappings:
+    - csv: "term"
+      column: "term"
+      type: "VARCHAR"
+    - csv: "name"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "description"
+      column: "description"
+      type: "VARCHAR"
+    - csv: "data_type"
+      column: "data_type"
+      type: "VARCHAR"
+    - csv: "ontology"
+      column: "ontology"
+      type: "VARCHAR"
+    - csv: "rank"
+      column: "rank"
+      type: "INTEGER"

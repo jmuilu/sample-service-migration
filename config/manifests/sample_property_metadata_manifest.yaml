@@ -1,0 +1,27 @@
+import:
+  targetTable: "sample.sample_property_metadata"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "sample_type_id"
+    - "property_term"
+  columnMappings:
+    - csv: "SAMPLE_TYPE_NAME"
+      column: "sample_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_type"
+        parentNaturalKey:
+          - csv: "SAMPLE_TYPE_NAME"
+            column: "name"
+    - csv: "PROPERTY_TERM"
+      column: "property_term"
+      type: "VARCHAR"
+      foreignKey:
+        parentTable: "sample.cv_property_type"
+        parentNaturalKey:
+          - csv: "PROPERTY_TERM"
+            column: "term"
+    - csv: "IS_REQUIRED"
+      column: "is_required"
+      type: "BOOLEAN"
