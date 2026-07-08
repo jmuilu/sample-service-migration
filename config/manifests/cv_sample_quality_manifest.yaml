@@ -1,0 +1,25 @@
+import:
+  targetTable: "sample.cv_sample_quality"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "term"
+  columnMappings:
+    - csv: "QUALITY"
+      column: "term"
+      type: "VARCHAR"
+    - csv: "DESCRIPTION"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "DESCRIPTION"
+      column: "description"
+      type: "VARCHAR"
+    - csv: "RANK"
+      column: "rank"
+      type: "INTEGER"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

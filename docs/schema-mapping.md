@@ -82,6 +82,39 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 
 **Note**: DB2 uses multiple sample tables (`SAMPLE_10002`, `SAMPLE_10003`, ...) unified via `VIEW_SAMPLE_MASTER`. Export must target the view or an equivalent join that flattens parent/sibling/container references to natural-key strings.
 
+### 5. CV_SAMPLE_QUALITY: `BIOBANK3.CV_QUALITY` → `sample.cv_sample_quality`
+
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
+|------------|----------|-----------------|---------|----------------|
+| `QUALITY` | VARCHAR(64) | `term` | VARCHAR(64) | Direct copy (PK) |
+| `DESCRIPTION` | VARCHAR(255) | `name` | VARCHAR(128)| Direct copy |
+| `DESCRIPTION` | VARCHAR(255) | `description` | TEXT | Direct copy, nullable |
+| `RANK` | INTEGER | `rank` | INTEGER | Direct copy |
+| `USERNAME` | VARCHAR(128) | `userstamp` | VARCHAR(128)| Direct copy |
+| `TIMELOG` | TIMESTAMP | `created` | TIMESTAMP | Direct copy |
+| (new) | — | `version` | INTEGER | Hardcode `1` |
+
+### 6. SAMPLE_QUALITY: `BIOBANK3.SAMPLE_QUALITY` → `sample.sample_quality`
+
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Lookup / Transformation |
+|------------|----------|-----------------|---------|-------------------------|
+| (surrogate PK)| INTEGER | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
+| `SAMPLE_ID` | CHARACTER(13) | `sample_id` | BIGINT (FK) | **LOOKUP**: join with `SAMPLE_10002` to get natural key `SAMPLEID` → look up `sample.sample.id` |
+| `QUALITY` | VARCHAR(64) | `quality_term` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
+| `USERNAME` | VARCHAR(128) | `userstamp` | VARCHAR(128)| Direct copy |
+| `TIMELOG` | TIMESTAMP | `created` | TIMESTAMP | Direct copy |
+| (new) | — | `version` | INTEGER | Hardcode `1` |
+
+### 7. SAMPLE_TYPE_QUALITY_METADATA: `V_SAMPLE_TYPE_QUALITY_METADATA` (derived) → `sample.sample_type_quality_metadata`
+
+| DB2 Column | DB2 Type | Postgres Column | PG Type | Lookup / Transformation |
+|------------|----------|-----------------|---------|-------------------------|
+| (surrogate PK)| — | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
+| `SAMPLETYPE` | VARCHAR | `sample_type_id` | BIGINT (FK) | **LOOKUP**: sample type `name` → look up `sample.sample_type.id` |
+| `QUALITY` | VARCHAR | `quality_term` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
+| (hardcoded) | — | `userstamp` | VARCHAR(128)| Hardcode `'migration'` |
+| (hardcoded) | — | `version` | INTEGER | Hardcode `1` |
+
 ## Enum Remapping
 
 ### SAMPLE_STATUS

@@ -1,0 +1,24 @@
+import:
+  targetTable: "sample.sample_type_quality_metadata"
+  operation: "UPSERT"
+  naturalKeys:
+    - "sample_type_id"
+    - "quality_term"
+  columnMappings:
+    - csv: "SAMPLETYPE"
+      column: "sample_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_type"
+        parentNaturalKey:
+          - csv: "SAMPLETYPE"
+            column: "name"
+    - csv: "QUALITY"
+      column: "quality_term"
+      type: "VARCHAR"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "VERSION"
+      column: "version"
+      type: "INTEGER"

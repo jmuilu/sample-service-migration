@@ -1,0 +1,24 @@
+import:
+  targetTable: "sample.sample_quality"
+  operation: "UPSERT"
+  naturalKeys:
+    - "sample_id"
+    - "quality_term"
+  columnMappings:
+    - csv: "SAMPLE_10002_SAMPLEID"
+      column: "sample_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample"
+        parentNaturalKey:
+          - csv: "SAMPLE_10002_SAMPLEID"
+            column: "sampleid"
+    - csv: "QUALITY"
+      column: "quality_term"
+      type: "VARCHAR"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"
