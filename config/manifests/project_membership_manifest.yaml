@@ -1,0 +1,30 @@
+import:
+  targetTable: "project.project_membership"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "project_id"
+    - "partner_id"
+  columnMappings:
+    - csv: "PROJECT_ABBREVIATION"
+      column: "project_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "project.project"
+        parentNaturalKey:
+          - csv: "PROJECT_ABBREVIATION"
+            column: "name"
+    - csv: "PARTNER_NAME"
+      column: "partner_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "project.partner"
+        parentNaturalKey:
+          - csv: "PARTNER_NAME"
+            column: "name"
+    - csv: "USERSTAMP"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "CREATED"
+      column: "created"
+      type: "TIMESTAMP"

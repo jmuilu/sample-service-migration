@@ -55,6 +55,11 @@ extract-data:
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BIOBANK3.SAMPLE_10029 --output=/Users/muilu/git/others/sample-service-migration/export/sample_10029.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BIOBANK3.CV_QUALITY --output=/Users/muilu/git/others/sample-service-migration/export/cv_sample_quality.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BIOBANK3.SAMPLE_QUALITY --output=/Users/muilu/git/others/sample-service-migration/export/sample_quality.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BIOBANK3.BATCH_LIST --output=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BIOBANK3.BATCH_SAMPLE_LIST --output=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PROJECT --output=/Users/muilu/git/others/sample-service-migration/export/project.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PARTNER --output=/Users/muilu/git/others/sample-service-migration/export/partner.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PROJECT_MEMBERSHIP --output=/Users/muilu/git/others/sample-service-migration/export/project_membership.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
 	@echo "✓ Data extraction complete."
 
 transform-data:
@@ -75,17 +80,28 @@ transform-data:
 	@echo "EDTA Whole blood,CONTAMINATED,migration,1" >> export/sample_type_quality_metadata.csv
 	@echo "EDTA Whole blood,HEMOLYTIC,migration,1" >> export/sample_type_quality_metadata.csv
 	@echo "Plasma,CLOTTED,migration,1" >> export/sample_type_quality_metadata.csv
+	@echo "Injecting 'Missing Partner' placeholder into partner.csv..."
+	@echo "Missing Partner,migration,2026-07-08 00:00:00,INTERNAL,Missing partner placeholder,ACTIVE,OTHER," >> export/partner.csv
+	@echo "Injecting missing project memberships for 'Missing Partner' into project_membership.csv..."
+	@echo "migration,2026-07-08 00:00:00,DEFAULT,Missing Partner,JAN12" >> export/project_membership.csv
+	@echo "migration,2026-07-08 00:00:00,DEFAULT,Missing Partner,D3R" >> export/project_membership.csv
+	@echo "migration,2026-07-08 00:00:00,DEFAULT,Missing Partner,KMoHUq" >> export/project_membership.csv
+	@echo "migration,2026-07-08 00:00:00,DEFAULT,Missing Partner,tammi7" >> export/project_membership.csv
+	@echo "migration,2026-07-08 00:00:00,DEFAULT,Missing Partner,DR" >> export/project_membership.csv
 	@echo "✓ Transformation complete."
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.sample_quality, sample.sample_type_quality_metadata, sample.sample_property, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.work_list_item, sample.work_list, sample.work_list_event, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample_property, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_properties.sql
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_qualities.sql
 	@echo "Importing table data..."
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/project.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/project_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/partner.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/partner_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/project_membership.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/project_membership_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/samplegroup.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/containertype.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/container_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/container.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/container_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
@@ -95,15 +111,23 @@ load-target:
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_property_testnayte.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@echo "Resetting PostgreSQL sequences..."
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
+		SELECT setval('project.project_id_seq', COALESCE((SELECT MAX(id) FROM project.project), 1)); \
+		SELECT setval('project.partner_id_seq', COALESCE((SELECT MAX(id) FROM project.partner), 1)); \
+		SELECT setval('project.project_membership_id_seq', COALESCE((SELECT MAX(id) FROM project.project_membership), 1)); \
 		SELECT setval('sample.sample_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type), 1)); \
 		SELECT setval('sample.container_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.container_type), 1)); \
 		SELECT setval('sample.container_id_seq', COALESCE((SELECT MAX(id) FROM sample.container), 1)); \
 		SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1)); \
 		SELECT setval('sample.sample_property_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_property), 1)); \
 		SELECT setval('sample.sample_type_quality_metadata_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type_quality_metadata), 1)); \
-		SELECT setval('sample.sample_quality_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_quality), 1));"
+		SELECT setval('sample.sample_quality_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_quality), 1)); \
+		SELECT setval('sample.work_list_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list), 1)); \
+		SELECT setval('sample.work_list_event_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_event), 1)); \
+		SELECT setval('sample.work_list_item_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_item), 1));"
 	@echo "✓ Data loading complete."
 
 migrate-all: clear-target extract-data transform-data load-target verify
@@ -119,7 +143,13 @@ verify:
 		UNION ALL SELECT 'sample_property', COUNT(*) FROM sample.sample_property \
 		UNION ALL SELECT 'cv_sample_quality', COUNT(*) FROM sample.cv_sample_quality \
 		UNION ALL SELECT 'sample_type_quality_metadata', COUNT(*) FROM sample.sample_type_quality_metadata \
-		UNION ALL SELECT 'sample_quality', COUNT(*) FROM sample.sample_quality;"
+		UNION ALL SELECT 'sample_quality', COUNT(*) FROM sample.sample_quality \
+		UNION ALL SELECT 'work_list', COUNT(*) FROM sample.work_list \
+		UNION ALL SELECT 'work_list_event', COUNT(*) FROM sample.work_list_event \
+		UNION ALL SELECT 'work_list_item', COUNT(*) FROM sample.work_list_item \
+		UNION ALL SELECT 'project.project', COUNT(*) FROM project.project \
+		UNION ALL SELECT 'project.partner', COUNT(*) FROM project.partner \
+		UNION ALL SELECT 'project.project_membership', COUNT(*) FROM project.project_membership;"
 
 check-ai-rules:
 	@echo "Running AI sanity checks..."

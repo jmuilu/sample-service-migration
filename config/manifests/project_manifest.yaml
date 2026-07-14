@@ -1,0 +1,16 @@
+import:
+  targetTable: "project.project"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "name"
+  columnMappings:
+    - csv: "ABBREVIATION"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "USERSTAMP"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "CREATED"
+      column: "created"
+      type: "TIMESTAMP"

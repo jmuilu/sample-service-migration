@@ -1,0 +1,41 @@
+import:
+  targetTable: "sample.work_list_item"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "work_list_id"
+    - "sample_id"
+  columnMappings:
+    - csv: "BATCH_LIST_NAME"
+      column: "work_list_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.work_list"
+        parentNaturalKey:
+          - csv: "BATCH_LIST_NAME"
+            column: "name"
+    - csv: "SAMPLE_10002_SAMPLEID"
+      column: "sample_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample"
+        parentNaturalKey:
+          - csv: "SAMPLE_10002_SAMPLEID"
+            column: "sampleid"
+    - csv: "BATCH_SAMPLE_STATUS"
+      column: "item_status"
+      type: "VARCHAR"
+      transformScript: "config/scripts/work_list_transform.js"
+      transformFunction: "transformItemStatus"
+    - csv: "USERNAME"
+      column: "completed_by"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "completed_at"
+      type: "TIMESTAMP"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"
