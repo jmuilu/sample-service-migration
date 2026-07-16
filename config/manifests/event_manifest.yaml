@@ -1,0 +1,46 @@
+import:
+  targetTable: "sample.event"
+  operation: "INSERT"
+  batchSize: 100
+  naturalKeys:
+    - "sample_id"
+    - "event_type"
+    - "event_time"
+  columnMappings:
+    - csv: "ID"
+      column: "id"
+      type: "BIGINT"
+    - csv: "SAMPLEID"
+      column: "sample_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample"
+        parentNaturalKey:
+          - csv: "SAMPLEID"
+            column: "sampleid"
+    - csv: "EVENT_TYPE"
+      column: "event_type"
+      type: "VARCHAR"
+    - csv: "EVENT_TIME"
+      column: "event_time"
+      type: "TIMESTAMP"
+    - csv: "EVENT_REASON"
+      column: "event_reason"
+      type: "VARCHAR"
+    - csv: "TASK_NAME"
+      column: "task_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.task"
+        parentNaturalKey:
+          - csv: "TASK_NAME"
+            column: "name"
+    - csv: "TEMPERATURE"
+      column: "temperature"
+      type: "DOUBLE"
+    - csv: "COMMENT"
+      column: "comment"
+      type: "VARCHAR"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"

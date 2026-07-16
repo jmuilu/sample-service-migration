@@ -1,0 +1,39 @@
+import:
+  targetTable: "sample.work_list_event"
+  operation: "INSERT"
+  batchSize: 100
+  naturalKeys:
+    - "work_list_id"
+    - "event_type"
+    - "event_time"
+  columnMappings:
+    - csv: "BATCH_NAME"
+      column: "work_list_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.work_list"
+        parentNaturalKey:
+          - csv: "BATCH_NAME"
+            column: "name"
+    - csv: "EVENT_TYPE"
+      column: "event_type"
+      type: "VARCHAR"
+    - csv: "EVENT_TIME"
+      column: "event_time"
+      type: "TIMESTAMP"
+      transformScript: "config/scripts/work_list_transform.js"
+      transformFunction: "transformCreated"
+    - csv: "EVENT_COMMENT"
+      column: "remarks"
+      type: "VARCHAR"
+    - csv: "EVENT_USER"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "BATCH_NAME"
+      column: "task_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.task"
+        parentNaturalKey:
+          - csv: "BATCH_NAME"
+            column: "name"

@@ -60,7 +60,11 @@ extract-data:
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PROJECT --output=/Users/muilu/git/others/sample-service-migration/export/project.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PARTNER --output=/Users/muilu/git/others/sample-service-migration/export/partner.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
 	@$(EXPORTER_DIR)/gradlew -p $(EXPORTER_DIR) bootRun --args='--table=BCPROJECT.PROJECT_MEMBERSHIP --output=/Users/muilu/git/others/sample-service-migration/export/project_membership.csv --spring.datasource.url=$(DB2_URL) --spring.datasource.username=$(DB2_USER) --spring.datasource.password=$(DB2_PASSWORD)'
+	@.venv/bin/python3 scripts/export_batch_lists.py
+	@.venv/bin/python3 scripts/export_work_list_events.py
+	@.venv/bin/python3 scripts/export_legacy_events.py
 	@echo "✓ Data extraction complete."
+
 
 transform-data:
 	@echo "Transforming dynamic EAV property data..."
@@ -92,12 +96,13 @@ transform-data:
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.work_list_item, sample.work_list, sample.work_list_event, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample_property, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample_property, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_properties.sql
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_qualities.sql
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "INSERT INTO sample.task (id, name, description, task_type, task_status, userstamp) VALUES (1, 'SYSTEM-DEFAULT', 'System default task for events without active context', 'MIGRATION', 'ACTIVE', 'migration') ON CONFLICT (id) DO NOTHING;"
 	@echo "Importing table data..."
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/project.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/project_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/partner.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/partner_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
@@ -111,9 +116,18 @@ load-target:
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_property_testnayte.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@echo "Importing tasks (from batch lists)..."
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/task_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@echo "Migrating historical work list events..."
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
+	@echo "Migrating historical sample events..."
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/legacy_event.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/event_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@echo "Resetting PostgreSQL sequences..."
+
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
 		SELECT setval('project.project_id_seq', COALESCE((SELECT MAX(id) FROM project.project), 1)); \
 		SELECT setval('project.partner_id_seq', COALESCE((SELECT MAX(id) FROM project.partner), 1)); \
@@ -127,7 +141,9 @@ load-target:
 		SELECT setval('sample.sample_quality_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_quality), 1)); \
 		SELECT setval('sample.work_list_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list), 1)); \
 		SELECT setval('sample.work_list_event_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_event), 1)); \
-		SELECT setval('sample.work_list_item_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_item), 1));"
+		SELECT setval('sample.work_list_item_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_item), 1)); \
+		SELECT setval('sample.task_id_seq', COALESCE((SELECT MAX(id) FROM sample.task), 1)); \
+		SELECT setval('sample.event_id_seq', COALESCE((SELECT MAX(id) FROM sample.event), 1));"
 	@echo "✓ Data loading complete."
 
 migrate-all: clear-target extract-data transform-data load-target verify
@@ -147,9 +163,13 @@ verify:
 		UNION ALL SELECT 'work_list', COUNT(*) FROM sample.work_list \
 		UNION ALL SELECT 'work_list_event', COUNT(*) FROM sample.work_list_event \
 		UNION ALL SELECT 'work_list_item', COUNT(*) FROM sample.work_list_item \
+		UNION ALL SELECT 'task', COUNT(*) FROM sample.task \
+		UNION ALL SELECT 'event', COUNT(*) FROM sample.event \
 		UNION ALL SELECT 'project.project', COUNT(*) FROM project.project \
 		UNION ALL SELECT 'project.partner', COUNT(*) FROM project.partner \
 		UNION ALL SELECT 'project.project_membership', COUNT(*) FROM project.project_membership;"
+	@.venv/bin/python3 scripts/validation/validate_work_list_migration.py
+
 
 check-ai-rules:
 	@echo "Running AI sanity checks..."

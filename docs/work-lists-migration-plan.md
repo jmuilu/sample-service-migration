@@ -286,7 +286,43 @@ import:
     - csv: "TIMELOG"
       column: "created"
       type: "TIMESTAMP"
+
+#### 3.3.3. Work List Event Manifest: `config/manifests/work_list_event_manifest.yaml`
+```yaml
+import:
+  targetTable: "sample.work_list_event"
+  operation: "INSERT"
+  batchSize: 100
+  naturalKeys:
+    - "work_list_id"
+    - "event_type"
+    - "event_time"
+  columnMappings:
+    - csv: "BATCH_NAME"
+      column: "work_list_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.work_list"
+        parentNaturalKey:
+          - csv: "BATCH_NAME"
+            column: "name"
+    - csv: "EVENT_TYPE"
+      column: "event_type"
+      type: "VARCHAR"
+    - csv: "EVENT_TIME"
+      column: "event_time"
+      type: "TIMESTAMP"
+      transformScript: "config/scripts/work_list_transform.js"
+      transformFunction: "transformCreated"
+    - csv: "EVENT_COMMENT"
+      column: "remarks"
+      type: "VARCHAR"
+    - csv: "EVENT_USER"
+      column: "userstamp"
+      type: "VARCHAR"
 ```
+
+---
 
 ### Step 4: Import into PostgreSQL
 Run the loader tool using Gradle commands, overriding the datasource driver to Postgres:
@@ -297,6 +333,15 @@ Run the loader tool using Gradle commands, overriding the datasource driver to P
 
 # 2. Load Work List items
 ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+
+# 3. Load Historical Work List events (coordinated with trigger disablers)
+# Temporarily disable trigger that auto-logs CREATED events during INSERT to avoid duplication
+psql -U sample -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
+
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+
+# Re-enable the trigger
+psql -U sample -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
 ```
 
 ### Step 5: Sequence Reset
@@ -304,4 +349,13 @@ After successfully loading all records, reset the target sequences:
 ```sql
 SELECT setval('sample.work_list_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list), 1));
 SELECT setval('sample.work_list_item_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_item), 1));
+SELECT setval('sample.work_list_event_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_event), 1));
 ```
+
+### Step 6: Automated Validation
+Verify the migration integrity by running the validation suite:
+```bash
+make verify
+```
+This executes the validation script `scripts/validation/validate_work_list_migration.py` which validates count parity, event timestamps distinctness, exclusivity indices, and drift view behavior.
+

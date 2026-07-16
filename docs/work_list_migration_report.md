@@ -1,12 +1,9 @@
 # Work List & Project Membership Migration Report
 
-This report summarizes the implementation, data cleaning, and execution results of the `work_list` and project membership migration from DB2 to PostgreSQL.
+This report summarizes the implementation, data cleaning, and execution results of the `work_list`, `work_list_item`, and historical `work_list_event` migration from DB2 to PostgreSQL.
 
 ## 1. Migration Architecture
-The migration was completed utilizing the generic zero-compile `importer2026` ETL framework. No custom Java code or external scripting (like Python) was introduced. Instead, YAML manifests and embedded JavaScript (GraalJS/Nashorn inside the JVM) are used for dynamic transformations and cleanups.
-
-> [!NOTE]
-> All documentation files are maintained directly within the repository in Markdown format; there is no need to generate separate PDF documents.
+The migration was completed utilizing the generic zero-compile `importer2026` ETL framework. No custom Java code or external compiling was introduced. Instead, YAML manifests, Python export scripts, and embedded JavaScript (Nashorn inside the JVM) are used for dynamic transformations and cleanups.
 
 ### Manifest Files Used:
 * [project_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/project_manifest.yaml)
@@ -14,18 +11,16 @@ The migration was completed utilizing the generic zero-compile `importer2026` ET
 * [project_membership_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/project_membership_manifest.yaml)
 * [work_list_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_manifest.yaml)
 * [work_list_item_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml)
+* [work_list_event_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_event_manifest.yaml)
 
 ---
 
-## 2. Dynamic Missing Partner & Timestamp Resolution
-During source DB2 database analysis, it was identified that out of 71 batch lists (`BIOBANK3.BATCH_LIST`), **11 rows had missing partner information** (both `PARTNER_ID` and `PROJECT_MEMBERSHIP_ID` were `NULL`). Additionally, some timestamps contained microseconds format incompatible with standard Postgres timestamp mapping.
-
-To resolve these issues cleanly without extra tools or connection logic on the customer's server:
-1. **Dynamic Partner Cache initialization**: In [work_list_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/work_list_transform.js), Java NIO APIs are leveraged to read and index `export/project_membership.csv` in memory during first-row execution.
-2. **Auto-Resolution Rule (JavaScript)**: If a project associated with a batch has *exactly one* active project membership, the partner is auto-resolved to that partner.
-3. **Fallback Placeholder Rule (JavaScript)**: If a project has zero or multiple memberships, the partner is resolved to a synthetic **"Missing Partner"** fallback placeholder.
-4. **Timestamp normalization (JavaScript)**: Formats any microsecond-precision DB2 timestamps to the standard `'yyyy-MM-dd HH:mm:ss'` format expected by PostgreSQL.
-5. To maintain foreign key integrity, the synthetic `"Missing Partner"` partner and the corresponding memberships are dynamically injected during the `transform-data` phase.
+## 2. Dynamic Missing Partner & Historical Event Resolution
+During source DB2 database analysis, several challenges were identified and addressed:
+1. **Missing Partner Info**: Out of 71 batch lists (`BIOBANK3.BATCH_LIST`), 11 rows had missing partner information. This was resolved using a dynamic partner cache in `work_list_transform.js` to auto-resolve or map to a synthetic `"Missing Partner"` placeholder.
+2. **Missing Historical Status Changes**: The baseline `BATCH_LIST` table only represents the final status. Historical status changes (e.g., `READY_FOR_PICKING` -> `PICKING_IN_PROGRESS` -> `PICKING_COMPLETED`) were stored in DB2's `BATCH_LIST_AUDIT` table.
+3. **Reconstructed Event Extraction**: We implemented a CTE-based query in `scripts/export_work_list_events.py` leveraging DB2's `LEAD()` window function to reconstruct all 121 historical transition events (71 creation events and 50 status changes), preserving original comments, user stamps, and timestamps.
+4. **Trigger Coordination**: During import into `sample.work_list_event`, Postgres triggers were temporarily disabled (`DISABLE TRIGGER trg_work_list_event_after`) to prevent the generation of duplicate creation events and ensure historical timestamps were kept intact.
 
 ---
 
@@ -39,8 +34,16 @@ All schema changes were done directly in the database scripts:
 
 ---
 
-## 4. Migration Execution Verification
-The full migration pipeline was successfully executed using `make migrate-all`. The final row counts in the target PostgreSQL database matched expectations:
+## 4. Automated Verification & Validation
+We implemented a robust validation suite in [validate_work_list_migration.py](file:///Users/muilu/git/others/sample-service-migration/scripts/validation/validate_work_list_migration.py) executing direct live checks against both databases:
+* **Row Count Matching**: Confirms matching count for lists and list items.
+* **Event Counts & Timestamps Integrity**: Ensures all 121 events are loaded and timestamps are distinct.
+* **Exclusivity Constraint**: Confirms no samples are on multiple active picking lists (preventing Postgres unique index violations).
+* **Drift Detection**: Verifies that Postgres `view_work_list_items` is queryable and performs expected live vs snapshot location comparisons.
+
+The validation is now part of the end-to-end orchestration and can be run via `make verify`.
+
+### Migration Row Counts:
 
 | Target Table | Row Count | Description |
 | :--- | :--- | :--- |
@@ -56,7 +59,7 @@ The full migration pipeline was successfully executed using `make migrate-all`. 
 | `sample.sample_type_quality_metadata` | 11 | Fully verified |
 | `sample.sample_quality` | 493 | Fully verified |
 | `sample.work_list` | 71 | All batches successfully migrated |
-| `sample.work_list_event` | 71 | Sync status event log triggers executed |
+| `sample.work_list_event` | 121 | Reconstructed status events migrated successfully |
 | `sample.work_list_item` | 1,253 | Work list lines successfully matched and migrated |
 
 **Verification Status: PASS**
