@@ -1,6 +1,8 @@
 import:
   targetTable: "sample.sample_type_quality_metadata"
   operation: "UPSERT"
+  errorHandling:
+    onMissingFK: "SKIP"
   naturalKeys:
     - "sample_type_id"
     - "quality_term"

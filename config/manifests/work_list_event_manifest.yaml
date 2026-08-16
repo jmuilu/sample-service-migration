@@ -1,6 +1,8 @@
 import:
   targetTable: "sample.work_list_event"
   operation: "INSERT"
+  errorHandling:
+    onMissingFK: "SKIP"
   batchSize: 100
   naturalKeys:
     - "work_list_id"

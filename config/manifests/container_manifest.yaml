@@ -2,6 +2,8 @@ import:
   targetTable: "sample.container"
   operation: "UPSERT"
   batchSize: 100
+  errorHandling:
+    onMissingFK: "NULL"
   naturalKeys:
     - "name"
   columnMappings:

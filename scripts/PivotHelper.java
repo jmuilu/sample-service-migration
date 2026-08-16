@@ -30,6 +30,13 @@ public class PivotHelper {
         try {
             // 1. Resolve Sample Type Name from samplegroup.csv using the groupnr (which is stored in ABBREVIATION in DB2 export)
             String sampleTypeName = resolveSampleTypeName(metadataDir, groupnr);
+            if (sampleTypeName == null) {
+                System.out.println("Warning: groupnr '" + groupnr + "' not found in samplegroup.csv. Writing empty CSV.");
+                try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputPath), "UTF-8"))) {
+                    writer.write("SAMPLEID,PROPERTY_TERM,VALUE\n");
+                }
+                return;
+            }
             System.out.println("Resolved groupnr '" + groupnr + "' to sample type: '" + sampleTypeName + "'");
 
             // 2. Discover allowed property terms for this sample type from sample_property_metadata.csv
@@ -85,7 +92,7 @@ public class PivotHelper {
                 }
             }
         }
-        throw new IllegalArgumentException("No sample type found with abbreviation/groupnr '" + groupnr + "' in samplegroup.csv");
+        return null;
     }
 
     private static Set<String> discoverAllowedTerms(String metadataDir, String sampleTypeName) throws IOException {

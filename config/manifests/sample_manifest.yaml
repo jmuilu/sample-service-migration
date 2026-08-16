@@ -2,6 +2,8 @@ import:
   targetTable: "sample.sample"
   operation: "UPSERT"
   batchSize: 100
+  errorHandling:
+    onMissingFK: "NULL"
   naturalKeys:
     - "sampleid"
   columnMappings:

@@ -3,7 +3,7 @@ import os
 import ibm_db
 import psycopg2
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from scripts.db2_config import connect_db2
 
 pg_conn_str = "host='localhost' port=5432 dbname='sample' user='sample' password='sample'"
