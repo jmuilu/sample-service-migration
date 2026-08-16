@@ -132,6 +132,37 @@ def run_validation():
             print(f"✗ Drift view query failed: {e}")
             failed = True
 
+        # --- Check 5: Parent Work List Mapping ---
+        print("\n--- CHECK 5: Parent Work List Mapping ---")
+        try:
+            db2_parent_stmt = ibm_db.exec_immediate(db2_conn, "SELECT COUNT(*) FROM BIOBANK3.BATCH_LIST WHERE PARENT_ID IS NOT NULL")
+            db2_parent_cnt = ibm_db.fetch_both(db2_parent_stmt)[0]
+            
+            pg_cur.execute("SELECT COUNT(*) FROM sample.work_list WHERE parent_id IS NOT NULL")
+            pg_parent_cnt = pg_cur.fetchone()[0]
+            
+            print(f"DB2 BATCH_LIST with parent: {db2_parent_cnt} | PG work_list with parent: {pg_parent_cnt}")
+            if db2_parent_cnt == pg_parent_cnt:
+                print("✓ Parent work list mapping counts match.")
+                if db2_parent_cnt > 0:
+                    # Spot check parent-child relationship by name
+                    pg_cur.execute("""
+                        SELECT c.name, p.name 
+                        FROM sample.work_list c 
+                        JOIN sample.work_list p ON c.parent_id = p.id 
+                        LIMIT 5
+                    """)
+                    relations = pg_cur.fetchall()
+                    print("Mapped relations spot-check:")
+                    for child, parent in relations:
+                        print(f"  - {child} derived from {parent}")
+            else:
+                print("✗ Parent work list mapping counts MISMATCH!")
+                failed = True
+        except Exception as e:
+            print(f"✗ Parent work list validation failed: {e}")
+            failed = True
+
         # --- Summary ---
         print("\n======================================================================")
         if failed:

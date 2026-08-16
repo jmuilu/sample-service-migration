@@ -62,7 +62,7 @@ The unique business key for work lists is the `name` column.
 | (hardcoded) | `version` | `INTEGER` | Hardcode `1`. |
 | `COMMENT` | `comment` | `TEXT` | Direct copy (nullable). |
 | `PROJECT_ID` | (dropped) | — | Dropped (or mapped to comment if needed). |
-| `PARENT_ID` | (dropped) | — | Dropped (always NULL in source). |
+| `PARENT_ID` | `parent_id` | `BIGINT` | **FK Lookup** against `sample.work_list` using `PARENT_NAME` (resolved via self-join on `PARENT_ID = parent.ID` in the export query). |
 | `CONTAINER_ID` | (dropped) | — | Dropped (always NULL in source). |
 | `SOP_ID` | (dropped) | — | Dropped (unused protocol linkage). |
 

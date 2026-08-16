@@ -14,9 +14,11 @@ SELECT
     b.COMMENT,
     b.TIMELOG,
     b.ISPICK,
-    b.USERNAME
+    b.USERNAME,
+    parent.NAME AS PARENT_NAME
 FROM BIOBANK3.BATCH_LIST b
 LEFT JOIN BCPROJECT.PROJECT p ON b.PROJECT_ID = p.ID
+LEFT JOIN BIOBANK3.BATCH_LIST parent ON b.PARENT_ID = parent.ID
 ORDER BY b.ID
 """
 
@@ -35,7 +37,7 @@ try:
         # Write headers matching work_list_manifest and task_manifest requirements
         writer.writerow([
             "NAME", "BEGIN_TIME", "PROJECT_ABBREVIATION", 
-            "BATCH_STATUS", "COMMENT", "ISPICK", "PARTNER_NAME", "USERNAME"
+            "BATCH_STATUS", "COMMENT", "ISPICK", "PARTNER_NAME", "USERNAME", "PARENT_NAME"
         ])
         
         row_count = 0
@@ -50,6 +52,7 @@ try:
             comment = row_upper.get("COMMENT")
             ispick = row_upper.get("ISPICK")
             username = row_upper.get("USERNAME")
+            parent_name = row_upper.get("PARENT_NAME")
             
             if name: name = name.strip()
             if project_abbrev: project_abbrev = project_abbrev.strip()
@@ -57,6 +60,8 @@ try:
             if comment: comment = comment.strip()
             if ispick: ispick = ispick.strip()
             if username: username = username.strip()
+            if parent_name: parent_name = parent_name.strip()
+            else: parent_name = ""
             
             # Since partner_id in batch_list is always null in DB2, partner_name is empty.
             # The JS transform transforms empty string to 'Missing Partner' which resolves correctly.
@@ -64,7 +69,7 @@ try:
                 
             writer.writerow([
                 name, begin_time, project_abbrev,
-                batch_status, comment, ispick, partner_name, username
+                batch_status, comment, ispick, partner_name, username, parent_name
             ])
             row_count += 1
             row = ibm_db.fetch_assoc(stmt)

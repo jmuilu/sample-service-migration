@@ -50,3 +50,12 @@ import:
         parentNaturalKey:
           - csv: "PARTNER_NAME"
             column: "name"
+    - csv: "PARENT_NAME"
+      column: "parent_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.work_list"
+        parentNaturalKey:
+          - csv: "PARENT_NAME"
+            column: "name"
+
