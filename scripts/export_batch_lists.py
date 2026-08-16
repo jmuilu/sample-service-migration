@@ -1,8 +1,10 @@
 import csv
+import sys
+import os
 import ibm_db
 
-# Connection configuration
-dsn = "DATABASE=BCDEMO;HOSTNAME=localhost;PORT=50000;PROTOCOL=TCPIP;UID=db2inst1;PWD=Adm1Pwd1;"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scripts.db2_config import connect_db2
 
 sql_query = """
 SELECT 
@@ -23,7 +25,7 @@ ORDER BY b.ID
 """
 
 print("Connecting to DB2 database...")
-conn = ibm_db.connect(dsn, "", "")
+conn = connect_db2()
 
 try:
     print("Executing batch list export query...")

@@ -1,8 +1,11 @@
 import sys
+import os
 import ibm_db
 import psycopg2
 
-db2_dsn = "DATABASE=BCDEMO;HOSTNAME=localhost;PORT=50000;PROTOCOL=TCPIP;UID=db2inst1;PWD=Adm1Pwd1;"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scripts.db2_config import connect_db2
+
 pg_conn_str = "host='localhost' port=5432 dbname='sample' user='sample' password='sample'"
 
 def run_validation():
@@ -13,7 +16,7 @@ def run_validation():
     # 1. Connect to both databases
     try:
         print("Connecting to DB2...")
-        db2_conn = ibm_db.connect(db2_dsn, "", "")
+        db2_conn = connect_db2()
         print("✓ Connected to DB2.")
     except Exception as e:
         print(f"✗ Failed to connect to DB2: {e}")

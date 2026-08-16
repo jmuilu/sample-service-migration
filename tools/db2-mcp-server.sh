@@ -3,7 +3,8 @@
 # Credentials are read from the conf file at runtime - never hardcoded here.
 set -euo pipefail
 
-CONF_FILE="${HOME}/.server/biobank-test.conf"
+#CONF_FILE="${HOME}/.server/biobank-test.conf"
+CONF_FILE="${HOME}/.server/centox-dbowner.conf"
 if [ ! -f "$CONF_FILE" ]; then
     echo "error: credentials file not found at $CONF_FILE" >&2
     exit 1

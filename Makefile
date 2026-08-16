@@ -2,10 +2,14 @@
 EXPORTER_DIR = ../../exporter2026
 IMPORTER_DIR = ../../importer2026
 
-# DB2 Source Connection
-DB2_URL = jdbc:db2://localhost:50000/BCDEMO
-DB2_USER = db2inst1
-DB2_PASSWORD = Adm1Pwd1
+# DB2 Source Configuration (reads ~/.server/centox-dbowner.conf by default)
+CONF_FILE ?= $(HOME)/.server/centox-dbowner.conf
+DB2_USER ?= $(shell grep -E '^[[:space:]]*authid=' $(CONF_FILE) 2>/dev/null | tail -n 1 | cut -d= -f2 | tr -d '\"'\'' ')
+DB2_PASSWORD ?= $(shell grep -E '^[[:space:]]*password=' $(CONF_FILE) 2>/dev/null | tail -n 1 | cut -d= -f2 | tr -d '\"'\'' ')
+DB2_HOST ?= localhost
+DB2_PORT ?= 50000
+DB2_DATABASE ?= BCDEMO
+DB2_URL ?= jdbc:db2://$(DB2_HOST):$(DB2_PORT)/$(DB2_DATABASE)
 
 # Postgres Target Connection
 PG_URL = jdbc:postgresql://localhost:5432/sample
