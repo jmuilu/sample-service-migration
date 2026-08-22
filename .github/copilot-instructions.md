@@ -41,8 +41,8 @@ make verify        # Validate migration
 
 ```bash
 ../../importer2026/gradlew -p ../../importer2026 bootRun --args='\
-  --csv=/Users/muilu/git/others/sample-service-migration/export/sample.csv \
-  --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_manifest.yaml \
+  --csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample.csv \
+  --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_manifest.yaml \
   --spring.datasource.url=jdbc:postgresql://localhost:5432/sample \
   --spring.datasource.username=sample \
   --spring.datasource.password=sample \

@@ -12,7 +12,7 @@ Tämä tiedosto sisältää projektikohtaiset tekoälysäännöt ja parhaat käy
 
 ## 2. Status of Migrations
 * `sample_type`, `container_type`, `container` ja `sample` migraatiot ovat **VALMIIT** ja testattu.
-* Kaikki neljä ydintaulua on nyt migroitu. Seuraa tarkasti [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) -tiedoston ohjeita mahdollisissa jatkoaskelissa.
+* Kaikki neljä ydintaulua on nyt migroitu. Seuraa tarkasti [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) -tiedoston ohjeita mahdollisissa jatkoaskelissa.
 
 ## 3. Tool Execution Details
 *   **Postgres-ajuri:** Kun suoritat `importer2026` gradle-ajona tai JAR-tiedostona PostgreSQL-kantaan, lisää aina mukaan Postgres-ajurin pakotus:
@@ -24,5 +24,5 @@ Tämä tiedosto sisältää projektikohtaiset tekoälysäännöt ja parhaat käy
 ---
 
 ## 4. Referenssit
-*   Aktiivinen Runbook: [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md)
-*   Skeemamäppäykset: [schema-mapping.md](file:///Users/muilu/git/others/sample-service-migration/docs/schema-mapping.md)
+*   Aktiivinen Runbook: [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md)
+*   Skeemamäppäykset: [schema-mapping.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/docs/schema-mapping.md)

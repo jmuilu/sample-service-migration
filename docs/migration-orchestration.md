@@ -12,7 +12,7 @@ The migration is built on a zero-compile, generic ETL model. It does not use cus
 3. **`PivotHelper.java`**: Transforms flat subclass tables into vertical EAV properties.
 4. **`importer2026`**: Maps, validates, resolves foreign keys, and loads datasets using YAML manifests and JavaScript scripts.
 
-All steps are consolidated into targets within the root [Makefile](file:///Users/muilu/git/others/sample-service-migration/Makefile), enabling operators to run the entire pipeline with a single command:
+All steps are consolidated into targets within the root [Makefile](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/Makefile), enabling operators to run the entire pipeline with a single command:
 ```bash
 make migrate-all
 ```

@@ -1,7 +1,7 @@
 # Sample Type Migration Plan: DB2 ↔ PostgreSQL
 
 > [!IMPORTANT]
-> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
+> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
 
 This plan outlines the steps, mappings, rules, and validations required to migrate **Sample Types** from the legacy DB2 database (table `BIOBANK3.SAMPLEGROUP`) to the target PostgreSQL `sample-service` database (table `sample.sample_type`).
 

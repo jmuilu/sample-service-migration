@@ -1,7 +1,7 @@
 # Migration Design Analysis: Staging Schema vs. Application-Based ETL
 
 > [!IMPORTANT]
-> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
+> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
 
 This document analyzes whether it makes sense to copy the source DB2 database directly into a staging schema within PostgreSQL and perform the migration transformations entirely in-database (ELT/SQL), compared to using the custom Java loader application.
 

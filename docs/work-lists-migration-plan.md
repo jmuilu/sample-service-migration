@@ -29,12 +29,12 @@ graph TD
 
 ## 2. Prerequisites & Schema Activation
 
-The target tables `work_list` and `work_list_item` are defined in the sibling project `sample-service` in the Liquibase changeset [v007-work-lists.sql](file:///Users/muilu/git/others/sample-service/src/main/resources/db/scripts/sample/v007-work-lists.sql). 
+The target tables `work_list` and `work_list_item` are defined in the sibling project `sample-service` in the Liquibase changeset [v007-work-lists.sql](file:///Users/muilu/git/others/biobank-solution/sample-service/src/main/resources/db/scripts/sample/v007-work-lists.sql). 
 
 Before executing the data load, this changeset must be applied to the target database:
 1. Start the Spring Boot application in the `sample-service` sibling project (which automatically runs Liquibase migrations):
    ```bash
-   # In /Users/muilu/git/others/sample-service
+   # In /Users/muilu/git/others/biobank-solution/sample-service
    make backend-run
    ```
 2. Verify that the tables are created in the PostgreSQL `sample` schema:
@@ -137,14 +137,14 @@ Extract the raw DB2 tables using the pre-compiled `exporter2026`:
 ```bash
 # Path: /Users/muilu/git/exporter2026
 # Export BATCH_LIST
-./gradlew bootRun --args='--table=BIOBANK3.BATCH_LIST --output=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+./gradlew bootRun --args='--table=BIOBANK3.BATCH_LIST --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 
 # Export BATCH_SAMPLE_LIST (flattens SAMPLE_10002.ID to SAMPLEID and BATCH_LIST.ID to NAME)
-./gradlew bootRun --args='--table=BIOBANK3.BATCH_SAMPLE_LIST --output=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+./gradlew bootRun --args='--table=BIOBANK3.BATCH_SAMPLE_LIST --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 ```
 
 ### Step 2: Define Transformation Script
-Create [work_list_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/work_list_transform.js) to execute the enum conversions:
+Create [work_list_transform.js](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/scripts/work_list_transform.js) to execute the enum conversions:
 ```javascript
 function transformListStatus(status) {
     if (!status) return 'DRAFT';
@@ -327,18 +327,18 @@ import:
 ### Step 4: Import into PostgreSQL
 Run the loader tool using Gradle commands, overriding the datasource driver to Postgres:
 ```bash
-# Path: /Users/muilu/git/others/sample-service-migration
+# Path: /Users/muilu/git/others/biobank-solution/sample-service-migration
 # 1. Load Work List headers
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # 2. Load Work List items
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # 3. Load Historical Work List events (coordinated with trigger disablers)
 # Temporarily disable trigger that auto-logs CREATED events during INSERT to avoid duplication
 psql -U sample -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
 
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # Re-enable the trigger
 psql -U sample -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"

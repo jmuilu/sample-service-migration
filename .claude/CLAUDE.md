@@ -3,7 +3,7 @@
 This file extends or overrides global settings for this project.
 
 ## ⚠️ CRITICAL: Read the Runbook First
-Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) at the start of the session. It contains the active Zero-Compile ETL migration execution playbook, credentials, paths, and status checklist.
+Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) at the start of the session. It contains the active Zero-Compile ETL migration execution playbook, credentials, paths, and status checklist.
 
 ## Migration Guidance
 - **Zero-Compile ETL:** Do NOT write custom Java loader classes in the `loader/` directory. All migrations must use `exporter2026` + `importer2026` + YAML manifests and JS transformations in `config/`.

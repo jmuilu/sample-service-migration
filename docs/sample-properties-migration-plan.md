@@ -20,7 +20,7 @@ Through DB2 metadata catalog inspection, we discovered the following active subc
 4. **All other subclass tables** (Plasma `10008`, Serum `10010`, EDTA cord blood `10012`, Tissue `10014`, Maternal Whole Blood `10027`, EDTA Plasma `10030`) only contain the unused columns and require no property migration.
 
 ### 1.2 PostgreSQL Target Database (`sample-service`)
-In `sample-service`, dynamic properties are implemented using an **Entity-Attribute-Value (EAV)** pattern, defined in [v005-properties.sql](file:///Users/muilu/git/others/sample-service/src/main/resources/db/scripts/sample/v005-properties.sql):
+In `sample-service`, dynamic properties are implemented using an **Entity-Attribute-Value (EAV)** pattern, defined in [v005-properties.sql](file:///Users/muilu/git/others/biobank-solution/sample-service/src/main/resources/db/scripts/sample/v005-properties.sql):
 
 ```mermaid
 erDiagram
@@ -61,17 +61,17 @@ Run `exporter2026` to extract subclass tables joined with the master table `SAMP
 
 ```bash
 # DNA (10003)
-../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10003 --output=/Users/muilu/git/others/sample-service-migration/export/sample_10003.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10003 --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 
 # EDTA Whole Blood (10004)
-../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10004 --output=/Users/muilu/git/others/sample-service-migration/export/sample_10004.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10004 --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10004.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 
 # TestNäyte (10029)
-../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10029 --output=/Users/muilu/git/others/sample-service-migration/export/sample_10029.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+../../exporter2026/gradlew -p ../../exporter2026 bootRun --args='--table=BIOBANK3.SAMPLE_10029 --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10029.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
 ```
 
 ### Phase 2: Transform (Dynamic Unpivot)
-Execute [PivotHelper.java](file:///Users/muilu/git/others/sample-service-migration/scripts/PivotHelper.java). This single-file Java program runs directly on any JVM 11+ without compilation. It dynamically reads `export/samplegroup.csv` and `export/sample_property_metadata.csv` to discover the allowed properties for the given group, maps columns case-insensitively (ignoring underscores), and generates a vertical EAV CSV file.
+Execute [PivotHelper.java](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/PivotHelper.java). This single-file Java program runs directly on any JVM 11+ without compilation. It dynamically reads `export/samplegroup.csv` and `export/sample_property_metadata.csv` to discover the allowed properties for the given group, maps columns case-insensitively (ignoring underscores), and generates a vertical EAV CSV file.
 
 ```bash
 # DNA (10003)
@@ -87,21 +87,21 @@ java scripts/PivotHelper.java export/sample_10029.csv export/sample_property_tes
 ### Phase 3: Load
 
 #### A. Seed Controlled Vocabulary and Metadata
-Because `importer2026` expects target tables to contain an `id` surrogate primary key for foreign key resolution, loading the dictionary tables `cv_property_type` (PK `term`) and `sample_property_metadata` (PK `(sample_type_id, property_term)`) is done directly using a seed SQL script [seed_properties.sql](file:///Users/muilu/git/others/sample-service-migration/scripts/postgres/seed_properties.sql):
+Because `importer2026` expects target tables to contain an `id` surrogate primary key for foreign key resolution, loading the dictionary tables `cv_property_type` (PK `term`) and `sample_property_metadata` (PK `(sample_type_id, property_term)`) is done directly using a seed SQL script [seed_properties.sql](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_properties.sql):
 
 ```bash
-docker exec -i sample-service-db-1 psql -U sample -d sample < /Users/muilu/git/others/sample-service-migration/scripts/postgres/seed_properties.sql
+docker exec -i sample-service-db-1 psql -U sample -d sample < /Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_properties.sql
 ```
 
 #### B. Load Property Values via `importer2026`
-The unpivoted EAV values are loaded using `importer2026` with the [sample_property_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_property_manifest.yaml) manifest. A Nashorn JS script [property_transform.js](file:///Users/muilu/git/others/sample-service-migration/config/scripts/property_transform.js) automatically inspects the vocabulary definitions and routes the `VALUE` to the correct type-specific column in PostgreSQL, returning `null` for non-matching ones.
+The unpivoted EAV values are loaded using `importer2026` with the [sample_property_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml) manifest. A Nashorn JS script [property_transform.js](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/scripts/property_transform.js) automatically inspects the vocabulary definitions and routes the `VALUE` to the correct type-specific column in PostgreSQL, returning `null` for non-matching ones.
 
 ```bash
 # Load EDTA Whole Blood properties
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_property_edta.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_property_edta.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # Load TestNäyte properties
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_property_testnayte.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_property_testnayte.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 ```
 
 #### C. Reset Sequence

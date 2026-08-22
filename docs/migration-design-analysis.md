@@ -1,7 +1,7 @@
 # Migration Design Analysis: File-Based vs. Direct Direct ETL
 
 > [!IMPORTANT]
-> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
+> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
 
 This document explains the rationale behind the file-based migration design (DB2 → CSV → Postgres) and evaluates its alignment with industry best practices for database migrations.
 

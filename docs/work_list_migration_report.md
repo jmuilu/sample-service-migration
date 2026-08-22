@@ -6,12 +6,12 @@ This report summarizes the implementation, data cleaning, and execution results 
 The migration was completed utilizing the generic zero-compile `importer2026` ETL framework. No custom Java code or external compiling was introduced. Instead, YAML manifests, Python export scripts, and embedded JavaScript (Nashorn inside the JVM) are used for dynamic transformations and cleanups.
 
 ### Manifest Files Used:
-* [project_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/project_manifest.yaml)
-* [partner_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/partner_manifest.yaml)
-* [project_membership_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/project_membership_manifest.yaml)
-* [work_list_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_manifest.yaml)
-* [work_list_item_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_item_manifest.yaml)
-* [work_list_event_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/work_list_event_manifest.yaml)
+* [project_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/project_manifest.yaml)
+* [partner_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/partner_manifest.yaml)
+* [project_membership_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/project_membership_manifest.yaml)
+* [work_list_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml)
+* [work_list_item_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml)
+* [work_list_event_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml)
 
 ---
 
@@ -30,12 +30,12 @@ To support seamless UPSERT operations and foreign key lookups inside `importer20
 2. **`project.project_membership` schema fix**: Created an autoincrementing surrogate `id` column (`project_membership_id_seq`) and added a `UNIQUE` constraint to `(project_id, partner_id)` to allow proper `RETURNING id` query support during CSV load.
 
 All schema changes were done directly in the database scripts:
-* [v001b-project.sql](file:///Users/muilu/git/others/sample-service/src/main/resources/db/scripts/sample/v001b-project.sql)
+* [v001b-project.sql](file:///Users/muilu/git/others/biobank-solution/sample-service/src/main/resources/db/scripts/sample/v001b-project.sql)
 
 ---
 
 ## 4. Automated Verification & Validation
-We implemented a robust validation suite in [validate_work_list_migration.py](file:///Users/muilu/git/others/sample-service-migration/scripts/validation/validate_work_list_migration.py) executing direct live checks against both databases:
+We implemented a robust validation suite in [validate_work_list_migration.py](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/validation/validate_work_list_migration.py) executing direct live checks against both databases:
 * **Row Count Matching**: Confirms matching count for lists and list items.
 * **Event Counts & Timestamps Integrity**: Ensures all 121 events are loaded and timestamps are distinct.
 * **Exclusivity Constraint**: Confirms no samples are on multiple active picking lists (preventing Postgres unique index violations).

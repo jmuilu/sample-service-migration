@@ -2,7 +2,7 @@
   "mcpServers": {
     "db2-biobank-test": {
       "type": "stdio",
-      "command": "/Users/muilu/git/others/sample-service-migration/tools/db2-mcp-server.sh",
+      "command": "/Users/muilu/git/others/biobank-solution/sample-service-migration/tools/db2-mcp-server.sh",
       "args": [],
       "env": {}
     }

@@ -77,7 +77,7 @@ Since DB2 uses binary keys (`CHARACTER(13)`) to link `SAMPLE_QUALITY` to samples
 1. **Extract Controlled Vocabulary**:
    ```bash
    # Path: /Users/muilu/git/exporter2026
-   ./gradlew bootRun --args='--table=BIOBANK3.CV_QUALITY --output=/Users/muilu/git/others/sample-service-migration/export/cv_sample_quality.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+   ./gradlew bootRun --args='--table=BIOBANK3.CV_QUALITY --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/cv_sample_quality.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
    ```
 
 2. **Extract Metadata View**:
@@ -111,7 +111,7 @@ Since DB2 uses binary keys (`CHARACTER(13)`) to link `SAMPLE_QUALITY` to samples
 4. **Extract Sample Qualities**:
    ```bash
    # Path: /Users/muilu/git/exporter2026
-   ./gradlew bootRun --args='--table=BIOBANK3.SAMPLE_QUALITY --output=/Users/muilu/git/others/sample-service-migration/export/sample_quality.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
+   ./gradlew bootRun --args='--table=BIOBANK3.SAMPLE_QUALITY --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_quality.csv --spring.datasource.url=jdbc:db2://localhost:50000/BCDEMO --spring.datasource.username=db2inst1 --spring.datasource.password=Adm1Pwd1'
    ```
 
 ### Step 2: Generate Seed Script
@@ -122,21 +122,21 @@ Use the python generator to convert `export/cv_sample_quality.csv` into the SQL 
 1. **Seed Vocabulary**:
    Execute the generated SQL seed script directly against the Postgres database:
    ```bash
-   docker exec -i sample-service-db-1 psql -U sample -d sample < /Users/muilu/git/others/sample-service-migration/scripts/postgres/seed_qualities.sql
+   docker exec -i sample-service-db-1 psql -U sample -d sample < /Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_qualities.sql
    ```
 
 2. **Load Allowed Quality Metadata**:
-   Load using `importer2026` with the [sample_type_quality_metadata_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml) manifest:
+   Load using `importer2026` with the [sample_type_quality_metadata_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml) manifest:
    ```bash
-   # Path: /Users/muilu/git/others/sample-service-migration
-   ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+   # Path: /Users/muilu/git/others/biobank-solution/sample-service-migration
+   ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
    ```
 
 3. **Load Sample Quality Mappings**:
-   Load using `importer2026` with the [sample_quality_manifest.yaml](file:///Users/muilu/git/others/sample-service-migration/config/manifests/sample_quality_manifest.yaml) manifest:
+   Load using `importer2026` with the [sample_quality_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_quality_manifest.yaml) manifest:
    ```bash
-   # Path: /Users/muilu/git/others/sample-service-migration
-   ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+   # Path: /Users/muilu/git/others/biobank-solution/sample-service-migration
+   ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
    ```
 
 ### Step 4: Reset Sequences

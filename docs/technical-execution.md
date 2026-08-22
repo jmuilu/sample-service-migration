@@ -1,7 +1,7 @@
 # Technical Execution Guide: DB2 ↔ PostgreSQL Migration
 
 > [!IMPORTANT]
-> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
+> This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
 
 This document describes the technical architecture, execution flow, codebase changes, and step-by-step commands to run the migration for all 4 tables (`sample_type`, `container_type`, `container`, `sample`).
 
@@ -53,7 +53,7 @@ graph TD
 Before running the loader, ensure the target Postgres schema is fully created and matches the latest migrations from `sample-service`.
 ```bash
 # In the sample-service project root, run Liquibase migrations to create the schema:
-cd /Users/muilu/git/others/sample-service
+cd /Users/muilu/git/others/biobank-solution/sample-service
 ./gradlew update
 ```
 
@@ -63,22 +63,22 @@ Extract the tables from the DB2 instance. Using `exporter2026` CLI, run the expo
 cd /Users/muilu/git/exporter2026
 
 # Export Sample Groups (Sample Types)
-./gradlew bootRun --args='--table=BIOBANK3.SAMPLEGROUP --output=/Users/muilu/git/others/sample-service-migration/export/samplegroup.csv'
+./gradlew bootRun --args='--table=BIOBANK3.SAMPLEGROUP --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/samplegroup.csv'
 
 # Export Container Types
-./gradlew bootRun --args='--table=BIOBANK3.CONTAINERTYPE --output=/Users/muilu/git/others/sample-service-migration/export/containertype.csv'
+./gradlew bootRun --args='--table=BIOBANK3.CONTAINERTYPE --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/containertype.csv'
 
 # Export Containers
-./gradlew bootRun --args='--table=BIOBANK3.CONTAINER --output=/Users/muilu/git/others/sample-service-migration/export/container.csv'
+./gradlew bootRun --args='--table=BIOBANK3.CONTAINER --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/container.csv'
 
 # Export Samples (using the flattened VIEW_SAMPLE_MASTER)
-./gradlew bootRun --args='--table=BIOBANK3.VIEW_SAMPLE_MASTER --output=/Users/muilu/git/others/sample-service-migration/export/sample.csv'
+./gradlew bootRun --args='--table=BIOBANK3.VIEW_SAMPLE_MASTER --output=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample.csv'
 ```
 
 ### Step 3: Run the Loader Application
 Once raw CSVs are saved in the `export/` directory, launch the `loader` Spring Boot app to transform and insert the data:
 ```bash
-cd /Users/muilu/git/others/sample-service-migration
+cd /Users/muilu/git/others/biobank-solution/sample-service-migration
 
 # Build the loader
 ../../exporter2026/gradlew -p loader build
