@@ -1,6 +1,6 @@
 # Sibling paths
-EXPORTER_DIR = ../../exporter2026
-IMPORTER_DIR = ../../importer2026
+EXPORTER_DIR = ../../../exporter2026
+IMPORTER_DIR = ../../../importer2026
 
 # DB2 Source Configuration (reads ~/.server/centox-dbowner.conf by default)
 CONF_FILE ?= $(HOME)/.server/centox-dbowner.conf
@@ -181,8 +181,8 @@ build-graph:
 	@rm -rf /tmp/graphify-merge
 	@mkdir -p /tmp/graphify-merge
 	@graphify extract loader/src/main/java --out /tmp/graphify-merge/loader
-	@graphify extract ../../importer2026/src/main/java --out /tmp/graphify-merge/importer2026
-	@graphify extract ../../exporter2026/src/main/java --out /tmp/graphify-merge/exporter2026
+	@graphify extract $(IMPORTER_DIR)/src/main/java --out /tmp/graphify-merge/importer2026
+	@graphify extract $(EXPORTER_DIR)/src/main/java --out /tmp/graphify-merge/exporter2026
 	@graphify extract ../sample-service/src/main/java --out /tmp/graphify-merge/sample-service
 	@graphify merge-graphs \
 		/tmp/graphify-merge/loader/graphify-out/graph.json \

@@ -14,8 +14,8 @@ Always read [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-so
 - **Self-join sorting:** Always use `--sort-self-joins` when loading tables with self-referential parent-child foreign keys (specifically `sample` and `container`).
 
 ## Development Commands
-- Build importer: `../importer2026/gradlew -p ../importer2026 build -x test`
-- Test importer: `../importer2026/gradlew -p ../importer2026 test`
-- Build legacy loader: `../../exporter2026/gradlew -p loader build`
-- Run legacy loader: `../../exporter2026/gradlew -p loader bootRun`
+- Build importer: `../../../importer2026/gradlew -p ../../../importer2026 build -x test`
+- Test importer: `../../../importer2026/gradlew -p ../../../importer2026 test`
+- Build legacy loader: `../../../exporter2026/gradlew -p loader build`
+- Run legacy loader: `../../../exporter2026/gradlew -p loader bootRun`
 - Clean work files: `make clean`
