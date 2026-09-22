@@ -32,24 +32,6 @@ import:
       type: "TIMESTAMP"
       transformScript: "config/scripts/work_list_transform.js"
       transformFunction: "transformCreated"
-    - csv: "PROJECT_ABBREVIATION"
-      column: "project_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "project.project"
-        parentNaturalKey:
-          - csv: "PROJECT_ABBREVIATION"
-            column: "name"
-    - csv: "PARTNER_NAME"
-      column: "partner_id"
-      type: "BIGINT"
-      transformScript: "config/scripts/work_list_transform.js"
-      transformFunction: "transformPartnerName"
-      foreignKey:
-        parentTable: "project.partner"
-        parentNaturalKey:
-          - csv: "PARTNER_NAME"
-            column: "name"
     - csv: "PARENT_NAME"
       column: "parent_id"
       type: "BIGINT"

@@ -76,20 +76,11 @@ transform-data:
 	@java scripts/PivotHelper.java export/sample_10004.csv export/sample_property_edta.csv 10004
 	@if [ -s export/sample_10029.csv ]; then java scripts/PivotHelper.java export/sample_10029.csv export/sample_property_testnayte.csv 10029; else touch export/sample_property_testnayte.csv; fi
 	@echo "Generating sample type quality metadata CSV..."
-	@echo "SAMPLETYPE,QUALITY,USERNAME,VERSION" > export/sample_type_quality_metadata.csv
-	@echo "DNA,BLOODY,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "DNA,CENTRIFUGED,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "DNA,CLOTTED,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "DNA,TRANSPORT_PROBLEM,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,BLOODY,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,CENTRIFUGED,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,CLOTTED,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,CLOUDY,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,CONTAMINATED,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Whole blood,HEMOLYTIC,migration,1" >> export/sample_type_quality_metadata.csv
-	@echo "EDTA Plasma,CLOTTED,migration,1" >> export/sample_type_quality_metadata.csv
+	@.venv/bin/python3 scripts/generate_quality_metadata.py
 	@echo "Injecting Missing Partner placeholder and project memberships..."
 	@.venv/bin/python3 scripts/inject_missing_partner.py
+	@echo "Filtering picking-list events out of legacy sample events..."
+	@.venv/bin/python3 scripts/filter_legacy_events.py
 	@echo "✓ Transformation complete."
 
 clear-target:
