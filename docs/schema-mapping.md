@@ -71,8 +71,17 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | SAMPLE_STATUS | VARCHAR(32) | sample_status | VARCHAR(32) | **ENUM REMAP**: lookup in remap table; CHECK `IN ('PENDING','AVAILABLE','NOT_AVAILABLE')` |
 | AMOUNT | INTEGER | amount | INTEGER | Direct copy; nullable; unit: microliters |
 | CONCENTRATION | REAL | concentration | REAL | Direct copy; nullable |
-| REMARKS | VARCHAR(2000) | remarks | TEXT | Direct copy; nullable |
-| COMMENT | VARCHAR(255) | comment | VARCHAR(255) | Direct copy; nullable |
+| REMARKS | VARCHAR(2000) | comment | VARCHAR(255) | Direct copy; nullable. DB2 has separate `REMARKS`/`ERROR_REMARKS` columns; this maps to the general-purpose `comment` field (previously unmapped — Postgres had no DB2 source for it before this ADR 0015 investigation) |
+| ERROR_REMARKS | VARCHAR(2000) | error_remarks | TEXT | Direct copy; nullable. Renamed from `remarks` by [ADR 0015](file:///Users/muilu/git/others/biobank-solution/sample-service/docs/adr/0015-sample-native-provenance-columns.md) — the free-text detail attached on HL7 ingestion/validation failure |
+| SOURCE | VARCHAR(50) | source | VARCHAR(64) | Direct copy; nullable. New in ADR 0015 |
+| SOURCEID | VARCHAR(50) | sourceid | VARCHAR(64) | Direct copy; nullable. New in ADR 0015 |
+| ALIASID | VARCHAR(128) | altid | VARCHAR(64) | Direct copy; nullable. New in ADR 0015 |
+| SOURCE_FILE | VARCHAR(128) | source_file | VARCHAR(255) | Direct copy; nullable. New in ADR 0015 |
+| *(none found)* | — | organ | VARCHAR(64) FK → `cv_organ` | New in ADR 0015. No organ/tissue/body-site column exists anywhere in the investigated DB2 schema — always `NULL` after migration. See `docs/sample-attributes-migration-plan.md` §2 |
+| *(no reliable per-sample source)* | — | lab_code | VARCHAR(64) | New in ADR 0015. `HL7.VIEW_AVAILABLE_LAB_CODE_KIND_SAMPLE` is many-to-many (available codes for a sample's *kind*, not the code it was actually ordered under) — not usable as a scalar per-sample value. Always `NULL` after migration. See `docs/sample-attributes-migration-plan.md` §2 |
+| *(no reliable per-sample source)* | — | messageid | VARCHAR(64) | New in ADR 0015. `HL7.VIEW_BARE_SAMPLE_ORDER_MESSAGE` exists but doesn't join cleanly to `SAMPLEID` in this dataset. Always `NULL` after migration. See `docs/sample-attributes-migration-plan.md` §2 |
+| SAMPLE_10003.ELUTION_VOLUME (DNA subclass table only) | INTEGER | volume_ext | INTEGER | New in ADR 0015. Sourced from the DNA-specific subclass table, not the master export — handled by `dna_attributes_manifest.yaml`, not this table's own manifest. See `docs/sample-attributes-migration-plan.md` §3 |
+| *(DNA subclass table columns)* | — | attributes | JSONB | New in ADR 0017 (replaces the EAV `sample_property` model, deleted outright — no longer part of this schema mapping). DNA's `ABS260`/`ABS280`/`ABS230`/`ABS260280`/`ABS260230`/`EXTRACTIONMETHOD`/`DILUTION_FACTOR` are routed here as JSON keys `ABS260`/.../`EXTRACTION_METHOD`/`FACTOR` — see `docs/sample-attributes-migration-plan.md` §3 for the full column-by-column decision (including why `DILUTION_FACTOR`, not DB2's own `FACTOR`, feeds `attributes.FACTOR`) |
 | CONTAINER_NAME | VARCHAR(64) | container_id | BIGINT (FK) | **LOOKUP**: `CONTAINER_NAME` → `sample.container.name` → new `id`; nullable (samples may be unplaced) |
 | PLACECODE | VARCHAR(64) | placecode | VARCHAR(16) | Direct copy; nullable; part of UNIQUE `(container_id, placecode)` |
 | PARENT_SAMPLEID | VARCHAR(64) | parent_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT_SAMPLEID` → `sample.sample.sampleid` → new `id` in `sample.sample`; nullable (non-aliquots) |

@@ -1,5 +1,17 @@
 # Migration Orchestration & Full Execution Playbook
 
+> [!WARNING]
+> **Partially superseded (2026-09-23).** `sample.sample_property` (the EAV table this document's
+> orchestration graph and loading order are built around) was deleted outright by ADR 0017;
+> `seed_properties.sql`, `sample_property_manifest.yaml`, `sample_property_metadata_manifest.yaml`,
+> `cv_property_type_manifest.yaml` and `property_transform.js` no longer exist in this repo. DNA's
+> extension attributes now go into `sample.sample.attributes` (jsonb) via
+> `dna_attributes_manifest.yaml`/`dna_attributes_transform.js` instead — see
+> [sample-attributes-migration-plan.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/docs/sample-attributes-migration-plan.md).
+> The rest of this document (table dependency order for `sample_type`/`container_type`/
+> `container`/`sample`/`sample_quality`, idempotency model, execution playbook shape) is still
+> accurate; only the `sample_property`-related rows/steps below are stale.
+
 This document details the orchestration strategy, table dependencies, and execution sequence to perform a complete, end-to-end data migration from the source DB2 database to PostgreSQL in a single run.
 
 ---

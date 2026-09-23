@@ -1,5 +1,14 @@
 # Backend Schema Update Migration Plan & Concept/Value Mapping Analysis
 
+> [!WARNING]
+> **Stale (2026-09-23).** This plan's §1.4 and §3 assume `sample.cv_property_type` still exists
+> and would be updated in place ("pre-seeded" SPREC properties). ADR 0017 instead deleted the
+> whole EAV model outright — `cv_property_type_manifest.yaml` and `seed_properties.sql` (both
+> referenced below) no longer exist in this repo. See
+> [sample-attributes-migration-plan.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/docs/sample-attributes-migration-plan.md)
+> for what actually replaced it. The rest of this document (event-type/work-list/sample-status
+> mapping analysis) is unaffected and still accurate.
+
 **Target Repositories:**
 - Destination Schema: [sample-service](file:///Users/muilu/git/others/biobank-solution/sample-service) (PostgreSQL)
 - Migration Workspace: [sample-service-migration](file:///Users/muilu/git/others/biobank-solution/sample-service-migration)

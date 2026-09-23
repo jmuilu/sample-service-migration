@@ -71,10 +71,11 @@ extract-data:
 
 
 transform-data:
-	@echo "Transforming dynamic EAV property data..."
-	@java scripts/PivotHelper.java export/sample_10003.csv export/sample_property_dna.csv 10003
-	@java scripts/PivotHelper.java export/sample_10004.csv export/sample_property_edta.csv 10004
-	@if [ -s export/sample_10029.csv ]; then java scripts/PivotHelper.java export/sample_10029.csv export/sample_property_testnayte.csv 10029; else touch export/sample_property_testnayte.csv; fi
+	@echo "sample.sample_property (EAV) was deleted by sample-service ADR 0017 - DNA's"
+	@echo "export/sample_10003.csv is consumed directly by dna_attributes_manifest.yaml in"
+	@echo "load-target instead, no pivot step needed. EDTA Whole Blood (sample_10004.csv) and"
+	@echo "TestNayte (sample_10029.csv) property data has NO destination in the new schema -"
+	@echo "ADR 0017 only registered DNA's attributes. See docs/sample-attributes-migration-plan.md."
 	@echo "Generating sample type quality metadata CSV..."
 	@.venv/bin/python3 scripts/generate_quality_metadata.py
 	@echo "Injecting Missing Partner placeholder and project memberships..."
@@ -85,11 +86,10 @@ transform-data:
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample_property, sample.sample_property_metadata, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_properties.sql
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_qualities.sql
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "INSERT INTO sample.task (id, name, description, task_type, task_status, userstamp) VALUES (1, 'SYSTEM-DEFAULT', 'System default task for events without active context', 'MIGRATION', 'ACTIVE', 'migration') ON CONFLICT (id) DO NOTHING;"
 	@echo "Importing table data..."
@@ -97,13 +97,11 @@ load-target:
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/partner.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/partner_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/project_membership.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/project_membership_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/samplegroup.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_properties.sql
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/containertype.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/container_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/container.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/container_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
-	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_property_edta.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
-	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_property_dna.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
-	@if [ -s export/sample_property_testnayte.csv ]; then $(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_property_testnayte.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_property_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'; fi
+	@echo "Extending DNA samples with volume_ext / attributes (ADR 0015 / ADR 0017)..."
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/dna_attributes_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@if [ -s export/sample_quality.csv ]; then $(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'; fi
 	@echo "Importing tasks (from batch lists)..."
@@ -126,7 +124,6 @@ load-target:
 		SELECT setval('sample.container_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.container_type), 1)); \
 		SELECT setval('sample.container_id_seq', COALESCE((SELECT MAX(id) FROM sample.container), 1)); \
 		SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1)); \
-		SELECT setval('sample.sample_property_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_property), 1)); \
 		SELECT setval('sample.sample_type_quality_metadata_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type_quality_metadata), 1)); \
 		SELECT setval('sample.sample_quality_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_quality), 1)); \
 		SELECT setval('sample.work_list_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list), 1)); \
@@ -146,7 +143,7 @@ verify:
 		UNION ALL SELECT 'container_type', COUNT(*) FROM sample.container_type \
 		UNION ALL SELECT 'container', COUNT(*) FROM sample.container \
 		UNION ALL SELECT 'sample', COUNT(*) FROM sample.sample \
-		UNION ALL SELECT 'sample_property', COUNT(*) FROM sample.sample_property \
+		UNION ALL SELECT 'sample_with_attributes', COUNT(*) FILTER (WHERE attributes != '{}'::jsonb) FROM sample.sample \
 		UNION ALL SELECT 'cv_sample_quality', COUNT(*) FROM sample.cv_sample_quality \
 		UNION ALL SELECT 'sample_type_quality_metadata', COUNT(*) FROM sample.sample_type_quality_metadata \
 		UNION ALL SELECT 'sample_quality', COUNT(*) FROM sample.sample_quality \

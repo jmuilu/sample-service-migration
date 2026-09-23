@@ -1,0 +1,25 @@
+import:
+  # Extends already-migrated sample.sample rows (the sample_manifest.yaml/sample migration
+  # is COMPLETE) with the DNA-specific data BIOBANK3.SAMPLE_10003 used to carry - now routed
+  # to the native volume_ext column (ADR 0015) and the attributes jsonb column (ADR 0017)
+  # instead of the deleted sample.sample_property EAV table. UPDATE, not UPSERT: this file
+  # only ever touches sample.sample rows created by the sample migration; it never creates one.
+  targetTable: "sample.sample"
+  operation: "UPDATE"
+  batchSize: 100
+  errorHandling:
+    onMissingFK: "FAIL"
+  naturalKeys:
+    - "sampleid"
+  columnMappings:
+    - csv: "SAMPLE_10002_SAMPLEID"
+      column: "sampleid"
+      type: "VARCHAR"
+    - csv: "ELUTION_VOLUME"
+      column: "volume_ext"
+      type: "INTEGER"
+    - csv: "ABS260"
+      column: "attributes"
+      type: "JSONB"
+      transformScript: "config/scripts/dna_attributes_transform.js"
+      transformFunction: "buildDnaAttributes"
