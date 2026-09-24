@@ -106,10 +106,10 @@ Any manifest, SQL seed script, or CSV export referencing `ontology` on these tab
 | File | Target Component | Modification Description |
 |---|---|---|
 | [config/manifests/work_list_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml) | Manifest | Remove `project_id` and `partner_id` column mappings and `foreignKey` blocks. |
-| [config/manifests/cv_property_type_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/cv_property_type_manifest.yaml) | Manifest | Remove `ontology` column mapping. |
+| `config/manifests/cv_property_type_manifest.yaml` | Manifest | **Deleted** — ADR 0017 removed the EAV model outright; see warning banner above. |
 | [scripts/export_legacy_events.py](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/export_legacy_events.py) | Python ETL | Implement canonical 8-event mapping table and event reason resolver. |
 | [config/scripts/work_list_transform.js](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/scripts/work_list_transform.js) | JS Transform | Clean up unused `transformPartnerName` function. |
-| [scripts/postgres/seed_properties.sql](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_properties.sql) | SQL Seed | Remove `ontology` references; add SPREC canonical property definitions. |
+| `scripts/postgres/seed_properties.sql` | SQL Seed | **Deleted** — ADR 0017 removed the EAV model outright; see warning banner above. |
 | [scripts/postgres/seed_qualities.sql](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_qualities.sql) | SQL Seed | Remove `ontology` references. |
 | [Makefile](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/Makefile) | Automation | Verify table sequences, truncation order, and post-migration verification query. |
 | [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) | Documentation | Update runbook with the new schema mappings and rules. |
@@ -133,7 +133,7 @@ docker exec -i sample-service-db-1 psql -U sample -d sample -c "\dt sample.*"
 ```
 
 ### Step 2: Apply Script and Manifest Changes
-Apply the updates outlined in Section 3 to [work_list_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml), [cv_property_type_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/cv_property_type_manifest.yaml), [export_legacy_events.py](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/export_legacy_events.py), and [seed_properties.sql](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/postgres/seed_properties.sql).
+Apply the updates outlined in Section 3 to [work_list_manifest.yaml](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml) and [export_legacy_events.py](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/scripts/export_legacy_events.py). The `cv_property_type_manifest.yaml`/`seed_properties.sql` changes no longer apply — both files were deleted by ADR 0017 (see warning banner above).
 
 ### Step 3: Run Full End-to-End Migration
 ```bash
