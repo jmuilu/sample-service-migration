@@ -1,0 +1,57 @@
+import:
+  targetTable: "sample.sample_profile_primary_sample"
+  # INSERT, not UPSERT: this table has no unique constraint matching (sample_profile_id,
+  # sample_type_id, "order") - ON CONFLICT needs a real constraint to target, unlike
+  # sample_type_quality_metadata's uq_sample_type_quality. naturalKeys is still declared
+  # so downstream FK resolution (sample_profile_aliquot_sample's parent lookup) and
+  # self-join row registration still work - see docs/sample-profile-migration-plan.md §4.
+  operation: "INSERT"
+  batchSize: 100
+  errorHandling:
+    onMissingFK: "NULL"
+  naturalKeys:
+    - "sample_profile_id"
+    - "sample_type_id"
+    - "order"
+  columnMappings:
+    - csv: "PROFILE_NAME"
+      column: "sample_profile_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_profile"
+        parentNaturalKey:
+          - csv: "PROFILE_NAME"
+            column: "name"
+    - csv: "SAMPLE_TYPE_NAME"
+      column: "sample_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_type"
+        parentNaturalKey:
+          - csv: "SAMPLE_TYPE_NAME"
+            column: "name"
+    - csv: "AMOUNT"
+      column: "amount"
+      type: "INTEGER"
+    - csv: "ORDER"
+      column: "order"
+      type: "INTEGER"
+    - csv: "CONTAINER_TYPE"
+      column: "container_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.container_type"
+        parentNaturalKey:
+          - csv: "CONTAINER_TYPE"
+            column: "name"
+    - csv: "AUTO_ASSIGN"
+      column: "auto_assign"
+      type: "BOOLEAN"
+      transformScript: "config/scripts/sample_profile_transform.js"
+      transformFunction: "toBoolean01"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

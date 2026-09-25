@@ -67,6 +67,7 @@ extract-data:
 	@.venv/bin/python3 scripts/export_batch_lists.py
 	@.venv/bin/python3 scripts/export_work_list_events.py
 	@.venv/bin/python3 scripts/export_legacy_events.py
+	@.venv/bin/python3 scripts/export_sample_profiles.py
 	@echo "✓ Data extraction complete."
 
 
@@ -86,7 +87,7 @@ transform-data:
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, sample.sample_profile_sample_column, sample.sample_profile_aliquot_sample, sample.sample_profile_primary_sample, sample.sample_profile, project.project_membership, project.partner, project.project, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
@@ -104,6 +105,12 @@ load-target:
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/dna_attributes_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@if [ -s export/sample_quality.csv ]; then $(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_quality.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_quality_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'; fi
+	@echo "Importing sample profiles (see docs/sample-profile-migration-plan.md)..."
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_profile.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_profile_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_profile_primary_sample.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_profile_primary_sample_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@.venv/bin/python3 scripts/enrich_sample_profile_aliquots.py
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_profile_aliquot_sample.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_profile_aliquot_sample_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_profile_sample_column.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_profile_sample_column_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@echo "Importing tasks (from batch lists)..."
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/task_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
@@ -126,6 +133,10 @@ load-target:
 		SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1)); \
 		SELECT setval('sample.sample_type_quality_metadata_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type_quality_metadata), 1)); \
 		SELECT setval('sample.sample_quality_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_quality), 1)); \
+		SELECT setval('sample.sample_profile_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_profile), 1)); \
+		SELECT setval('sample.sample_profile_primary_sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_profile_primary_sample), 1)); \
+		SELECT setval('sample.sample_profile_aliquot_sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_profile_aliquot_sample), 1)); \
+		SELECT setval('sample.sample_profile_sample_column_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_profile_sample_column), 1)); \
 		SELECT setval('sample.work_list_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list), 1)); \
 		SELECT setval('sample.work_list_event_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_event), 1)); \
 		SELECT setval('sample.work_list_item_id_seq', COALESCE((SELECT MAX(id) FROM sample.work_list_item), 1)); \
@@ -147,6 +158,10 @@ verify:
 		UNION ALL SELECT 'cv_sample_quality', COUNT(*) FROM sample.cv_sample_quality \
 		UNION ALL SELECT 'sample_type_quality_metadata', COUNT(*) FROM sample.sample_type_quality_metadata \
 		UNION ALL SELECT 'sample_quality', COUNT(*) FROM sample.sample_quality \
+		UNION ALL SELECT 'sample_profile', COUNT(*) FROM sample.sample_profile \
+		UNION ALL SELECT 'sample_profile_primary_sample', COUNT(*) FROM sample.sample_profile_primary_sample \
+		UNION ALL SELECT 'sample_profile_aliquot_sample', COUNT(*) FROM sample.sample_profile_aliquot_sample \
+		UNION ALL SELECT 'sample_profile_sample_column', COUNT(*) FROM sample.sample_profile_sample_column \
 		UNION ALL SELECT 'work_list', COUNT(*) FROM sample.work_list \
 		UNION ALL SELECT 'work_list_event', COUNT(*) FROM sample.work_list_event \
 		UNION ALL SELECT 'work_list_item', COUNT(*) FROM sample.work_list_item \

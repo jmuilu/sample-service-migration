@@ -1,0 +1,66 @@
+import:
+  targetTable: "sample.sample_profile_aliquot_sample"
+  # INSERT, not UPSERT: same reason as sample_profile_primary_sample_manifest.yaml - no
+  # unique constraint matches this composite key.
+  operation: "INSERT"
+  batchSize: 100
+  errorHandling:
+    onMissingFK: "NULL"
+  naturalKeys:
+    - "sample_profile_primary_sample_id"
+    - "sample_type_id"
+    - "order"
+  columnMappings:
+    # sample_profile_primary_sample has no literal business-key column of its own
+    # (only FK/computed columns), so the parent match is composite against its
+    # own (sample_profile_id, sample_type_id, "order"). PRIMARY_PROFILE_ID /
+    # PRIMARY_SAMPLE_TYPE_ID are pre-resolved literal ids written by
+    # scripts/enrich_sample_profile_aliquots.py — see docs/sample-profile-migration-plan.md.
+    - csv: "PRIMARY_PROFILE_ID"
+      column: "sample_profile_primary_sample_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_profile_primary_sample"
+        parentNaturalKey:
+          - csv: "PRIMARY_PROFILE_ID"
+            column: "sample_profile_id"
+          - csv: "PRIMARY_SAMPLE_TYPE_ID"
+            column: "sample_type_id"
+          - csv: "PRIMARY_RANK"
+            column: "order"
+    - csv: "ALIQUOT_SAMPLE_TYPE_NAME"
+      column: "sample_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_type"
+        parentNaturalKey:
+          - csv: "ALIQUOT_SAMPLE_TYPE_NAME"
+            column: "name"
+    - csv: "AMOUNT"
+      column: "amount"
+      type: "INTEGER"
+    - csv: "COUNT"
+      column: "count"
+      type: "INTEGER"
+    - csv: "ORDER"
+      column: "order"
+      type: "INTEGER"
+    - csv: "CONTAINER_TYPE"
+      column: "container_type_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.container_type"
+        parentNaturalKey:
+          - csv: "CONTAINER_TYPE"
+            column: "name"
+    - csv: "AUTO_ASSIGN"
+      column: "auto_assign"
+      type: "BOOLEAN"
+      transformScript: "config/scripts/sample_profile_transform.js"
+      transformFunction: "toBoolean01"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

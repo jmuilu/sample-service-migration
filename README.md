@@ -16,7 +16,7 @@ This project contains:
 - **Reuse `exporter2026` for extraction**: The org's purpose-built DB2→CSV exporter (already complete, tested) handles JDBC metadata introspection and FK→natural-key resolution. No custom extraction code needed.
 - **Leverage generic loading with scriptable transformations**: Use the generic `importer2026` tool. Project-specific mappings are configured in YAML manifests, and complex transformation logic (abbreviation mappings, enum remapping) is executed via external JavaScript/SpEL scripts loaded dynamically by `importer2026`. This keeps the Java importer generic and reusable for other databases.
 - **Current location only**: Migrate only current `container_id`/`placecode` columns, not synthetic audit history. DB2 location history is reconstructed from `EVENT` rows (out of scope).
-- **Scope: 4 tables only**: `sample_type`, `container_type`, `container`, `sample` (matching `sample-service` M1+M2). Everything else (`EVENT`, `TASK`, annotations, batch lists, sample profiles, ID generators, consent/participant) is deferred until `sample-service` M3+ implements those entities.
+- **Scope**: see [`LLM_MIGRATION_RUNBOOK.md`](LLM_MIGRATION_RUNBOOK.md) §2 for the current per-table migration status — `sample_type`, `container_type`, `container`, `sample`, `sample_quality`, `work_list`/`work_list_item`, `event`, and `sample_profile*` are all complete; ID generators and consent/participant remain deferred until `sample-service` implements those entities.
 
 ## Project structure
 

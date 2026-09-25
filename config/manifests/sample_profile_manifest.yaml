@@ -1,0 +1,21 @@
+import:
+  targetTable: "sample.sample_profile"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "name"
+  columnMappings:
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "IS_DEFAULT"
+      column: "is_default"
+      type: "BOOLEAN"
+      transformScript: "config/scripts/sample_profile_transform.js"
+      transformFunction: "toBoolean01"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"

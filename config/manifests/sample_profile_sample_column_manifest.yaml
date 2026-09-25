@@ -1,0 +1,38 @@
+import:
+  targetTable: "sample.sample_profile_sample_column"
+  operation: "UPSERT"
+  batchSize: 100
+  naturalKeys:
+    - "sample_profile_id"
+    - "column_name"
+  columnMappings:
+    - csv: "PROFILE_NAME"
+      column: "sample_profile_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.sample_profile"
+        parentNaturalKey:
+          - csv: "PROFILE_NAME"
+            column: "name"
+    - csv: "COLUMN_NAME"
+      column: "column_name"
+      type: "VARCHAR"
+    - csv: "DEFAULT_VALUE"
+      column: "default_value_text"
+      type: "VARCHAR"
+    - csv: "IS_VISIBLE"
+      column: "is_visible"
+      type: "BOOLEAN"
+      transformScript: "config/scripts/sample_profile_transform.js"
+      transformFunction: "toBoolean01"
+    - csv: "IS_FIXED"
+      column: "is_fixed"
+      type: "BOOLEAN"
+      transformScript: "config/scripts/sample_profile_transform.js"
+      transformFunction: "toBoolean01"
+    - csv: "USERNAME"
+      column: "userstamp"
+      type: "VARCHAR"
+    - csv: "TIMELOG"
+      column: "created"
+      type: "TIMESTAMP"
