@@ -150,7 +150,7 @@ attributes = <built JSON> WHERE sampleid = SAMPLE_10002_SAMPLEID
 `COMPLETE`) `sample` migration created — it must never insert a row itself.
 
 ```bash
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/dna_attributes_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/dna_attributes_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 ```
 
 Since every DNA extension column is currently `NULL` for all 179 rows in this DB2 instance,

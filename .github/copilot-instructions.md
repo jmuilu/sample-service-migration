@@ -44,8 +44,8 @@ make verify        # Validate migration
   --csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample.csv \
   --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_manifest.yaml \
   --spring.datasource.url=jdbc:postgresql://localhost:5432/sample \
-  --spring.datasource.username=sample \
-  --spring.datasource.password=sample \
+  --spring.datasource.username=dbadmin \
+  --spring.datasource.password=dbadmin \
   --spring.datasource.driver-class-name=org.postgresql.Driver \
   --spring.main.web-application-type=none \
   --sort-self-joins'

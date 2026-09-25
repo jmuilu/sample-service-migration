@@ -13,8 +13,8 @@ DB2_URL ?= jdbc:db2://$(DB2_HOST):$(DB2_PORT)/$(DB2_DATABASE)
 
 # Postgres Target Connection
 PG_URL = jdbc:postgresql://localhost:5432/sample
-PG_USER = sample
-PG_PASSWORD = sample
+PG_USER = dbadmin
+PG_PASSWORD = dbadmin
 
 .PHONY: help plan validate-source extract-data transform-data clear-target load-target verify migrate-all clean check-ai-rules build-graph start-graphify-server
 

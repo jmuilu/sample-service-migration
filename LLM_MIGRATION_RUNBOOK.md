@@ -57,7 +57,7 @@ Create `config/manifests/<target_table>_manifest.yaml` mapping the CSV to Postgr
 * Always use absolute paths for the CSV and manifest parameters when running via Gradle, as the working directory switches to the sibling folder:
 ```bash
 # Path: /Users/muilu/git/others/biobank-solution/sample-service-migration
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/src_table.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/target_table_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/src_table.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/target_table_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
 ```
 
 ### Step 4: Verification & Sequence Reset

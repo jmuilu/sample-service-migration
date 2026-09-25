@@ -329,19 +329,19 @@ Run the loader tool using Gradle commands, overriding the datasource driver to P
 ```bash
 # Path: /Users/muilu/git/others/biobank-solution/sample-service-migration
 # 1. Load Work List headers
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # 2. Load Work List items
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # 3. Load Historical Work List events (coordinated with trigger disablers)
 # Temporarily disable trigger that auto-logs CREATED events during INSERT to avoid duplication
-psql -U sample -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
+psql -U dbadmin -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
 
-../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=sample --spring.datasource.password=sample --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
+../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
 # Re-enable the trigger
-psql -U sample -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
+psql -U dbadmin -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
 ```
 
 ### Step 5: Sequence Reset

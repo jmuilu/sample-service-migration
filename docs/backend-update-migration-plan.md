@@ -129,7 +129,7 @@ nc -z localhost 50000
 nc -z localhost 5432
 
 # 3. Verify backend schema migrations are up-to-date in PostgreSQL
-docker exec -i sample-service-db-1 psql -U sample -d sample -c "\dt sample.*"
+docker exec -i sample-service-db-1 psql -U dbadmin -d sample -c "\dt sample.*"
 ```
 
 ### Step 2: Apply Script and Manifest Changes
