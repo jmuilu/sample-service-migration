@@ -1,5 +1,7 @@
 rootProject.name = "sample-service-migration-loader"
 
-includeBuild("../../../importer2026")
-includeBuild("../../../exporter2026")
-includeBuild("../../sample-service")
+val home = System.getProperty("user.home")
+
+includeBuild("$home/git/importer2026")
+includeBuild("$home/git/exporter2026")
+includeBuild("$home/git/others/biobank-solution/sample-service")
