@@ -2,7 +2,8 @@
 
 Migrates DB2's sample-profile tables into `sample-service`'s `sample.sample_profile*` tables
 (schema: [v009-sample-profile.sql](file:///Users/muilu/git/others/biobank-solution/sample-service/src/main/resources/db/scripts/sample/v009-sample-profile.sql),
-status **DRAFT** — see [schema-status.md](file:///Users/muilu/git/others/biobank-solution/sample-service/docs/reference/schema-status.md).
+status **`pre-stable`** (reclassified 2026-09-29; shape recorded in
+[ADR 0022](file:///Users/muilu/git/others/biobank-solution/sample-service/docs/adr/0022-sample-profiles.md)) — see [schema-status.md](file:///Users/muilu/git/others/biobank-solution/sample-service/docs/reference/schema-status.md).
 `sample-service` already has full entity/repository/service/controller code and a passing
 `SampleProfileIntegrationTest` for this feature — this is a pure data migration, not new backend
 work).
@@ -48,7 +49,7 @@ document only, no schema change.** `sample.sample_profile` has no destination fo
 workflow, lab-request workflow, or lab package code today. This is real, non-default legacy
 configuration (not merely cosmetic UI state) that is lost by this migration — a conscious,
 approved trade-off, not silent data loss. If kit-creation/lab-request workflows are needed later,
-they require a schema change to this DRAFT table plus product input on the intended behavior,
+they require a schema change to this `pre-stable` table plus product input on the intended behavior,
 tracked as a future follow-up, not part of this migration.
 
 ### `sample_profile_primary_sample` (from `PROFILE_PRIMARY_SAMPLE_TYPE` ⋈ `PROFILE_SAMPLE_AMOUNT`)
@@ -105,7 +106,7 @@ lost) — same treatment here, decided 2026-09-25.
 
 ## 3. `sample_profile` seed row
 
-The DRAFT schema ships a Liquibase-seeded placeholder row, `'Default Profile'` (`is_default =
+The schema ships a Liquibase-seeded placeholder row, `'Default Profile'` (`is_default =
 true`), inserted once by `v009-sample-profile.sql` and not re-created by this migration's
 `clear-target`/`load-target` cycle (Liquibase changesets don't re-run once applied). None of the
 10 DB2 profiles are named `'Default Profile'`, so there's no name collision — but
