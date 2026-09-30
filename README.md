@@ -11,6 +11,9 @@ This project contains:
 - **Validation tools** — compare source/target row counts, check FK/unique-constraint integrity
 - **Migration playbook** — step-by-step runbook for the actual cutover
 
+Legacy system documentation (BC|SAMPLE user manual, importer guides, workflows) is indexed in
+[`../docs/legacy-db2/README.md`](../docs/legacy-db2/README.md).
+
 ## Key design decisions
 
 - **Reuse `exporter2026` for extraction**: The org's purpose-built DB2→CSV exporter (already complete, tested) handles JDBC metadata introspection and FK→natural-key resolution. No custom extraction code needed.
