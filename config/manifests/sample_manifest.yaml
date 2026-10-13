@@ -33,7 +33,7 @@ import:
       column: "concentration"
       type: "REAL"
     - csv: "REMARKS"
-      column: "comment"
+      column: "remarks"
       type: "VARCHAR"
     - csv: "ERROR_REMARKS"
       column: "error_remarks"

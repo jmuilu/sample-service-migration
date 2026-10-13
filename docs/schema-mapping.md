@@ -71,7 +71,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | SAMPLE_STATUS | VARCHAR(32) | sample_status | VARCHAR(32) | **ENUM REMAP**: lookup in remap table; CHECK `IN ('PENDING','AVAILABLE','NOT_AVAILABLE')` |
 | AMOUNT | INTEGER | amount | INTEGER | Direct copy; nullable; unit: microliters |
 | CONCENTRATION | REAL | concentration | REAL | Direct copy; nullable |
-| REMARKS | VARCHAR(2000) | comment | VARCHAR(255) | Direct copy; nullable. DB2 has separate `REMARKS`/`ERROR_REMARKS` columns; this maps to the general-purpose `comment` field (previously unmapped — Postgres had no DB2 source for it before this ADR 0015 investigation) |
+| REMARKS | VARCHAR(2000) | remarks | TEXT | Direct copy; nullable. DB2 has separate `REMARKS`/`ERROR_REMARKS` columns; this maps to the general-purpose `remarks` field (named `comment` before 2026-10-13) (previously unmapped — Postgres had no DB2 source for it before this ADR 0015 investigation) |
 | ERROR_REMARKS | VARCHAR(2000) | error_remarks | TEXT | Direct copy; nullable. Renamed from `remarks` by [ADR 0015](file:///Users/muilu/git/others/biobank-solution/sample-service/docs/adr/0015-sample-native-provenance-columns.md) — the free-text detail attached on HL7 ingestion/validation failure |
 | SOURCE | VARCHAR(50) | source | VARCHAR(64) | Direct copy; nullable. New in ADR 0015 |
 | SOURCEID | VARCHAR(50) | sourceid | VARCHAR(64) | Direct copy; nullable. New in ADR 0015 |
@@ -109,7 +109,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 |------------|----------|-----------------|---------|-------------------------|
 | (surrogate PK)| INTEGER | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
 | `SAMPLE_ID` | CHARACTER(13) | `sample_id` | BIGINT (FK) | **LOOKUP**: join with `SAMPLE_10002` to get natural key `SAMPLEID` → look up `sample.sample.id` |
-| `QUALITY` | VARCHAR(64) | `quality_term` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
+| `QUALITY` | VARCHAR(64) | `quality` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
 | `USERNAME` | VARCHAR(128) | `userstamp` | VARCHAR(128)| Direct copy |
 | `TIMELOG` | TIMESTAMP | `created` | TIMESTAMP | Direct copy |
 | (new) | — | `version` | INTEGER | Hardcode `1` |
@@ -120,7 +120,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 |------------|----------|-----------------|---------|-------------------------|
 | (surrogate PK)| — | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
 | `SAMPLETYPE` | VARCHAR | `sample_type_id` | BIGINT (FK) | **LOOKUP**: sample type `name` → look up `sample.sample_type.id` |
-| `QUALITY` | VARCHAR | `quality_term` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
+| `QUALITY` | VARCHAR | `quality` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
 | (hardcoded) | — | `userstamp` | VARCHAR(128)| Hardcode `'migration'` |
 | (hardcoded) | — | `version` | INTEGER | Hardcode `1` |
 

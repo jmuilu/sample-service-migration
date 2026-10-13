@@ -19,12 +19,12 @@ This document details the strategy and step-by-step execution playbook to migrat
    - PK: `term` `VARCHAR(64)`
 2. **`sample.sample_type_quality_metadata`**: Metadata defining which qualities are allowed for which sample types.
    - PK: `id` `BIGINT` (auto-sequence)
-   - Unique: `(sample_type_id, quality_term)`
+   - Unique: `(sample_type_id, quality)`
 3. **`sample.sample_quality`**: Mapping table linking a sample to its quality code(s).
    - PK: `id` `BIGINT` (auto-sequence)
    - FK: `sample_id` `BIGINT` (references `sample.sample`)
-   - FK: `quality_term` `VARCHAR(64)` (references `cv_sample_quality.term`)
-   - Unique: `(sample_id, quality_term)`
+   - FK: `quality` `VARCHAR(64)` (references `cv_sample_quality.term`)
+   - Unique: `(sample_id, quality)`
    - Trigger: `tr_validate_sample_quality` executes `tg_validate_sample_quality()` before insert/update to ensure the quality is allowed for the sample's type.
 
 ---
@@ -52,7 +52,7 @@ To satisfy the target trigger constraint, allowed combinations are derived from 
 | DB2 Column | DB2 Type | Postgres Column | PG Type | Lookup / Transformation |
 |------------|----------|-----------------|---------|-------------------------|
 | `SAMPLETYPE` | VARCHAR | `sample_type_id` | BIGINT | **LOOKUP**: `sample_type` name → `id` |
-| `QUALITY` | VARCHAR | `quality_term` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
+| `QUALITY` | VARCHAR | `quality` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
 | (hardcoded)| — | `userstamp` | VARCHAR(128) | Hardcode `'migration'` |
 | (hardcoded)| — | `version` | INTEGER | Hardcode `1` |
 
@@ -64,7 +64,7 @@ Since DB2 uses binary keys (`CHARACTER(13)`) to link `SAMPLE_QUALITY` to samples
 |------------|----------|-----------------|---------|-------------------------|
 | (surrogate PK)| INTEGER | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
 | `SAMPLE_10002_SAMPLEID` | VARCHAR | `sample_id` | BIGINT | **LOOKUP**: sample `sampleid` → `id` |
-| `QUALITY` | VARCHAR | `quality_term` | VARCHAR(64) | Direct copy (no FK lookup needed in manifest) |
+| `QUALITY` | VARCHAR | `quality` | VARCHAR(64) | Direct copy (no FK lookup needed in manifest) |
 | `USERNAME` | VARCHAR(128) | `userstamp` | VARCHAR(128) | Direct copy |
 | `TIMELOG` | TIMESTAMP | `created` | TIMESTAMP | Direct copy |
 
@@ -154,9 +154,9 @@ Run the following validation queries on Postgres to verify correct data load:
 
 1. **Verify Quality Counts**:
    ```sql
-   SELECT quality_term, COUNT(*) AS associations_count
+   SELECT quality, COUNT(*) AS associations_count
    FROM sample.sample_quality
-   GROUP BY quality_term
+   GROUP BY quality
    ORDER BY associations_count DESC;
    ```
    *Expected Outcome*: Total counts must sum up to `493`.
@@ -165,7 +165,7 @@ Run the following validation queries on Postgres to verify correct data load:
    Check if inserting a disallowed quality for a sample type is correctly blocked:
    ```sql
    -- DNA sample type does not allow 'HEMOLYTIC'
-   INSERT INTO sample.sample_quality (sample_id, quality_term) 
+   INSERT INTO sample.sample_quality (sample_id, quality) 
    VALUES ((SELECT id FROM sample.sample WHERE sample_type_id = (SELECT id FROM sample.sample_type WHERE name = 'DNA') LIMIT 1), 'HEMOLYTIC');
    ```
    *Expected Outcome*: Blocked with error: `Laatukoodi HEMOLYTIC ei ole sallittu näytetyypille...`

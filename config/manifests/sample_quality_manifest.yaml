@@ -3,7 +3,7 @@ import:
   operation: "UPSERT"
   naturalKeys:
     - "sample_id"
-    - "quality_term"
+    - "quality"
   columnMappings:
     - csv: "SAMPLE_10002_SAMPLEID"
       column: "sample_id"
@@ -14,7 +14,7 @@ import:
           - csv: "SAMPLE_10002_SAMPLEID"
             column: "sampleid"
     - csv: "QUALITY"
-      column: "quality_term"
+      column: "quality"
       type: "VARCHAR"
     - csv: "USERNAME"
       column: "userstamp"

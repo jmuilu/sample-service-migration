@@ -60,7 +60,7 @@ The unique business key for work lists is the `name` column.
 | `USERNAME` | `userstamp` | `VARCHAR(128)` | Direct copy of the creating user. |
 | `BEGIN_TIME` | `created` | `TIMESTAMP` | Direct copy of creation timestamp. |
 | (hardcoded) | `version` | `INTEGER` | Hardcode `1`. |
-| `COMMENT` | `comment` | `TEXT` | Direct copy (nullable). |
+| `COMMENT` | `remarks` | `TEXT` | Direct copy (nullable). |
 | `PROJECT_ID` | (dropped) | — | Dropped (or mapped to comment if needed). |
 | `PARENT_ID` | `parent_id` | `BIGINT` | **FK Lookup** against `sample.work_list` using `PARENT_NAME` (resolved via self-join on `PARENT_ID = parent.ID` in the export query). |
 | `CONTAINER_ID` | (dropped) | — | Dropped (always NULL in source). |

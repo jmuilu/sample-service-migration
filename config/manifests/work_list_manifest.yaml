@@ -22,7 +22,7 @@ import:
       column: "assigned_to"
       type: "VARCHAR"
     - csv: "COMMENT"
-      column: "comment"
+      column: "remarks"
       type: "VARCHAR"
     - csv: "USERNAME"
       column: "userstamp"

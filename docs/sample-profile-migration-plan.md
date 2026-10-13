@@ -58,7 +58,7 @@ tracked as a future follow-up, not part of this migration.
 |---|---|---|
 | `BIOBANK_SAMPLE_PROFILE_ID` → profile `NAME` | `sample_profile_id` (FK by name) | |
 | `SAMPLE_GROUPNR` → `SAMPLEGROUP.NAME` | `sample_type_id` (FK by name) | |
-| `RANK` | `"order"` | |
+| `RANK` | `sort_order` | |
 | `AMOUNT` | `amount` | |
 | `CONTAINER_TYPE` | `container_type_id` (FK by name) | Nullable — some rows have no container type |
 | `SIMPLE_AUTO_ASSIGN` | `auto_assign` | See ambiguity note below |
@@ -79,7 +79,7 @@ drop, document only.**
 ### `sample_profile_aliquot_sample` (from `PROFILE_ALIQUOT_SAMPLE`)
 
 Same shape as primary sample: `ALIQUOT_SAMPLE_GROUPNR` → `sample_type_id` (FK by name), `NUM` →
-`count`, `RANK` → `"order"`, `AMOUNT` → `amount`, `CONTAINER_TYPE` → `container_type_id` (FK,
+`count`, `RANK` → `sort_order`, `AMOUNT` → `amount`, `CONTAINER_TYPE` → `container_type_id` (FK,
 nullable), `SIMPLE_AUTO_ASSIGN` → `auto_assign`. Parent link
 (`sample_profile_primary_sample_id`) resolved via a composite key — see §4.
 
@@ -122,7 +122,7 @@ default, superseding the placeholder.
 column against **literal columns on the parent table** (e.g. `container.name`,
 `sample_profile.name`) — every existing manifest in this repo uses that shape. But
 `sample.sample_profile_primary_sample` has no literal business-key column of its own; its only
-identity is the composite `(sample_profile_id, sample_type_id, "order")` — itself made of two FK
+identity is the composite `(sample_profile_id, sample_type_id, sort_order)` — itself made of two FK
 columns. `parentNaturalKey` can match against those literal integer/FK columns directly, but only
 if the CSV already carries the exact resolved integer values, which requires a lookup against
 Postgres that can only happen *after* `sample_profile` and `sample_profile_primary_sample` are
@@ -134,7 +134,7 @@ resolves `sample_profile.id` and `sample_type.id` by name via `psycopg2` (alread
 dependency) and writes them as literal `PRIMARY_PROFILE_ID` / `PRIMARY_SAMPLE_TYPE_ID` columns
 into `export/sample_profile_aliquot_sample.csv`. The aliquot manifest's FK block then matches
 those, plus the untouched `PRIMARY_RANK`, against `sample_profile_primary_sample`'s own
-`(sample_profile_id, sample_type_id, "order")` — a 3-column composite `parentNaturalKey`, the same
+`(sample_profile_id, sample_type_id, sort_order)` — a 3-column composite `parentNaturalKey`, the same
 mechanism `project_membership_manifest.yaml` already uses for its two simple FKs, just extended to
 one more level.
 
@@ -158,7 +158,7 @@ for the up-to-date list of `importer2026` capabilities/fixes referenced below):
   `sample_type_quality_metadata`'s `uq_sample_type_quality`), and Postgres's `ON CONFLICT` needs
   one. `naturalKeys` is still declared and still useful (FK caching / self-join row registration).
 - Hit and fixed (user-approved) three small, generic gaps in `importer2026` along the way:
-  no boolean-column support, no identifier quoting (broke on the reserved-word column `"order"`,
+  no boolean-column support, no identifier quoting (broke on the reserved-word column `"order"`, since renamed `sort_order`,
   in two separate places — `PostgreSqlDialect` and `ForeignKeyResolver`). None of this repo's
   prior manifests had exercised these paths.
 - Own bug, not `importer2026`'s: the export script must format `TIMELOG` as whole-second

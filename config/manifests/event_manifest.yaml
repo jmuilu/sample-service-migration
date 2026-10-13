@@ -45,7 +45,7 @@ import:
       column: "temperature"
       type: "REAL"
     - csv: "COMMENT"
-      column: "comment"
+      column: "remarks"
       type: "VARCHAR"
     - csv: "USERNAME"
       column: "userstamp"

@@ -3,7 +3,7 @@ import os
 import psycopg2
 
 # sample.sample_profile_primary_sample has no literal business-key column of its
-# own (only FK/computed columns: sample_profile_id, sample_type_id, "order") —
+# own (only FK/computed columns: sample_profile_id, sample_type_id, sort_order) —
 # importer2026's foreignKey.parentNaturalKey can only match literal parent
 # columns, so it can't resolve sample_profile_aliquot_sample.sample_profile_
 # primary_sample_id directly from names. This script bridges that one hop: it
@@ -11,7 +11,7 @@ import psycopg2
 # sample_type.id (both already-loaded, static-or-just-loaded reference data) and
 # writes them as literal integer columns the aliquot manifest can then match
 # against sample_profile_primary_sample's own (sample_profile_id, sample_type_id,
-# "order") composite key. Must run after sample_profile + sample_profile_primary_
+# sort_order) composite key. Must run after sample_profile + sample_profile_primary_
 # sample are loaded, before sample_profile_aliquot_sample is loaded.
 # See docs/sample-profile-migration-plan.md for the full rationale.
 
