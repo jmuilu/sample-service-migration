@@ -33,7 +33,7 @@ import:
       column: "placecode"
       type: "VARCHAR"
     - csv: "TEMPERATURE"
-      column: "temperature_celsius"
+      column: "temperature"
       type: "REAL"
     - csv: "USERNAME"
       column: "userstamp"
