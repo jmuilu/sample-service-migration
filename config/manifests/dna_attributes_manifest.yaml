@@ -17,7 +17,7 @@ import:
       type: "VARCHAR"
     - csv: "ELUTION_VOLUME"
       column: "volume_ext"
-      type: "INTEGER"
+      type: "REAL"
     - csv: "ABS260"
       column: "attributes"
       type: "JSONB"
