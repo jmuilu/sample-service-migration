@@ -68,7 +68,7 @@ Below is the verified value mapping matrix between DB2 source events and Postgre
 
 * **DB2 Source Table**: `BIOBANK3.BATCH_LIST`
 * **Target Table 1**: `sample.task` (High-level project workflow context)
-  - Retains `project_id` and `partner_id` (foreign keys to `project.project_membership`).
+  - Retains `project_id` and `partner_id`: core's ids, plain columns with no foreign key (the local `project` schema was removed on 2026-10-13, sample-service ADR 0032).
   - Maps `ISPICK = 'Y'` -> `task_type = 'SAMPLE_DELIVERY'`, `ISPICK = 'N'` -> `task_type = 'SAMPLE_PROFILE'`.
 * **Target Table 2**: `sample.work_list` (Operational execution list)
   - `project_id` and `partner_id` columns **removed**.

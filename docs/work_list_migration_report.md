@@ -1,5 +1,11 @@
 # Work List & Project Membership Migration Report
 
+> **Superseded in part (2026-10-13).** This report describes a load that used the local `project.project`,
+> `project.partner` and `project.project_membership` tables and a "Missing Partner" placeholder. Those
+> tables are gone: `task.project_id` and `task.partner_id` now take DB2's `BATCH_LIST.PROJECT_ID` and
+> `PARTNER_ID` directly as core's ids (sample-service ADR 0032). `PARTNER_ID` is null in this DB2 data, so
+> the partner stays NULL.
+
 This report summarizes the implementation, data cleaning, and execution results of the `work_list`, `work_list_item`, and historical `work_list_event` migration from DB2 to PostgreSQL.
 
 ## 1. Migration Architecture

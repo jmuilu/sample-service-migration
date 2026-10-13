@@ -11,7 +11,8 @@ SELECT
     b.NAME,
     b.BEGIN_TIME,
     b.END_TIME,
-    p.ABBREVIATION AS PROJECT_ABBREVIATION,
+    b.PROJECT_ID,
+    b.PARTNER_ID,
     b.BATCH_STATUS,
     b.COMMENT,
     b.TIMELOG,
@@ -19,7 +20,6 @@ SELECT
     b.USERNAME,
     parent.NAME AS PARENT_NAME
 FROM BIOBANK3.BATCH_LIST b
-LEFT JOIN BCPROJECT.PROJECT p ON b.PROJECT_ID = p.ID
 LEFT JOIN BIOBANK3.BATCH_LIST parent ON b.PARENT_ID = parent.ID
 ORDER BY b.ID
 """
@@ -38,8 +38,8 @@ try:
         writer = csv.writer(csvfile)
         # Write headers matching work_list_manifest and task_manifest requirements
         writer.writerow([
-            "NAME", "BEGIN_TIME", "PROJECT_ABBREVIATION", 
-            "BATCH_STATUS", "COMMENT", "ISPICK", "PARTNER_NAME", "USERNAME", "PARENT_NAME"
+            "NAME", "BEGIN_TIME", "PROJECT_ID", 
+            "BATCH_STATUS", "COMMENT", "ISPICK", "PARTNER_ID", "USERNAME", "PARENT_NAME"
         ])
         
         row_count = 0
@@ -49,7 +49,8 @@ try:
             
             name = row_upper.get("NAME")
             begin_time = row_upper.get("BEGIN_TIME")
-            project_abbrev = row_upper.get("PROJECT_ABBREVIATION")
+            project_id = row_upper.get("PROJECT_ID")
+            partner_id = row_upper.get("PARTNER_ID")
             batch_status = row_upper.get("BATCH_STATUS")
             comment = row_upper.get("COMMENT")
             ispick = row_upper.get("ISPICK")
@@ -57,7 +58,6 @@ try:
             parent_name = row_upper.get("PARENT_NAME")
             
             if name: name = name.strip()
-            if project_abbrev: project_abbrev = project_abbrev.strip()
             if batch_status: batch_status = batch_status.strip()
             if comment: comment = comment.strip()
             if ispick: ispick = ispick.strip()
@@ -65,13 +65,11 @@ try:
             if parent_name: parent_name = parent_name.strip()
             else: parent_name = ""
             
-            # Since partner_id in batch_list is always null in DB2, partner_name is empty.
-            # The JS transform transforms empty string to 'Missing Partner' which resolves correctly.
-            partner_name = ""
-                
+            # Core's ids go straight into sample.task (ADR 0032, no local project tables). PARTNER_ID is
+            # always null in this DB2 data, so the column is empty and stays NULL.
             writer.writerow([
-                name, begin_time, project_abbrev,
-                batch_status, comment, ispick, partner_name, username, parent_name
+                name, begin_time, project_id,
+                batch_status, comment, ispick, partner_id, username, parent_name
             ])
             row_count += 1
             row = ibm_db.fetch_assoc(stmt)

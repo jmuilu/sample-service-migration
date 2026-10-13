@@ -186,3 +186,19 @@ All lookups happen **against the target Postgres schema**, which is assumed to b
 ## Next step
 
 → See `docs/migration-strategy.md` for the execution plan.
+
+## Core ids (2026-10-13, sample-service ADR 0032)
+
+The local `project`, `partner` and `project_membership` tables no longer exist, so none of `BCPROJECT.PROJECT`,
+`PARTNER` or `PROJECT_MEMBERSHIP` is exported or loaded any more. DB2 ids are carried across as plain numbers:
+
+| DB2 source | PostgreSQL column | Notes |
+|---|---|---|
+| `BATCH_LIST.PROJECT_ID` | `task.project_id` (`bigint`) | Core's project id; no foreign key. Exported by `scripts/export_batch_lists.py` |
+| `BATCH_LIST.PARTNER_ID` | `task.partner_id` (`bigint`) | Always null in the current DB2 data, so it stays NULL; the old "Missing Partner" placeholder is gone |
+| `SAMPLE_10002.PROJECT_ID` | `sample.project_id` (`bigint`) | Core's project id of the owning project (3 of 4 samples in bcdemo have one) |
+| `SAMPLE_10002.COLLECTION_ID` | `sample.collection_id` (`bigint`) | Core's consent collection id |
+
+Not mapped yet: `CONTAINER.BARCODE` (0 of 45 rows used in bcdemo) to `container.barcode`, and a sample barcode:
+both columns are unique when set, so they are mapped when real data and an empty-value rule exist.
+

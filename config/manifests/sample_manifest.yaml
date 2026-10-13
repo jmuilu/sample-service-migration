@@ -69,6 +69,12 @@ import:
         parentNaturalKey:
           - csv: "PARENT_SAMPLEID"
             column: "sampleid"
+    - csv: "PROJECT_ID"
+      column: "project_id"
+      type: "BIGINT"
+    - csv: "COLLECTION_ID"
+      column: "collection_id"
+      type: "BIGINT"
     - csv: "USERNAME"
       column: "userstamp"
       type: "VARCHAR"
