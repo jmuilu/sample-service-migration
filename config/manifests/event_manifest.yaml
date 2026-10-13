@@ -43,7 +43,7 @@ import:
             column: "name"
     - csv: "TEMPERATURE"
       column: "temperature"
-      type: "DOUBLE"
+      type: "REAL"
     - csv: "COMMENT"
       column: "comment"
       type: "VARCHAR"
