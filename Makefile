@@ -11,6 +11,16 @@ DB2_PORT ?= 50000
 DB2_DATABASE ?= BCDEMO
 DB2_URL ?= jdbc:db2://$(DB2_HOST):$(DB2_PORT)/$(DB2_DATABASE)
 
+# Source time zone (sample-service ADR 0029). DB2 TIMESTAMP values are zone-less wall-clock times
+# in the DB2 server's zone (the bcdemo server reports CURRENT TIMEZONE +03:00 in summer, i.e.
+# Europe/Helsinki). The target columns are timestamptz, and importer2026 builds each value with
+# Timestamp.valueOf(LocalDateTime), which uses the JVM default zone. Every JVM started by this
+# Makefile therefore runs in SOURCE_TZ, never in the host's zone. Set SOURCE_TZ to the customer
+# DB2 server's zone (check: SELECT CURRENT TIMEZONE FROM SYSIBM.SYSDUMMY1).
+SOURCE_TZ ?= Europe/Helsinki
+export TZ := $(SOURCE_TZ)
+export JAVA_TOOL_OPTIONS := -Duser.timezone=$(SOURCE_TZ) $(JAVA_TOOL_OPTIONS)
+
 # Postgres Target Connection
 PG_URL = jdbc:postgresql://localhost:5432/sample
 PG_USER = dbadmin

@@ -65,6 +65,28 @@ The migration uses the generic `importer2026` application. Run it using its Grad
 ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=export/samplegroup.csv --manifest=config/manifests/sample-type-manifest.yaml'
 ```
 
+### Time zone of migrated timestamps (sample-service ADR 0029)
+
+Every date-time column in the target schema is `timestamp with time zone`. DB2 `TIMESTAMP`
+values have no zone: they are wall-clock times in the DB2 server's zone. The bcdemo server
+reports `CURRENT TIMEZONE` +03:00 in October (summer time), consistent with `Europe/Helsinki`.
+
+`importer2026` turns each value into an instant with `Timestamp.valueOf(LocalDateTime)`, which
+uses the **JVM default time zone**. A load run on a host in UTC would therefore shift every
+legacy time by 2–3 hours, silently. To prevent that:
+
+- The `Makefile` sets `SOURCE_TZ` (default `Europe/Helsinki`), and exports `TZ` and
+  `JAVA_TOOL_OPTIONS=-Duser.timezone=$(SOURCE_TZ)` for every JVM it starts.
+- For a customer server, check the zone first and set it explicitly:
+  `SELECT CURRENT TIMEZONE FROM SYSIBM.SYSDUMMY1` (DB2), then `make migrate-all SOURCE_TZ=<zone>`.
+- If you run `importer2026` by hand, set the same options (the example above does not).
+- **Daylight saving time.** A wall-clock time in the spring-forward gap does not exist and is moved
+  forward by an hour. A time in the repeated autumn hour is read as the first (summer-time)
+  occurrence. Both are rare in practice, but they are not errors the load reports.
+- **Check after a load.** Pick a few rows with known DB2 values and compare them, for example
+  `SELECT created AT TIME ZONE 'Europe/Helsinki' FROM sample.sample WHERE sampleid = '...'` in
+  PostgreSQL against `TIMELOG` of the same sample in DB2. The wall-clock values must match exactly.
+
 ## Python Environment Setup
 
 This project uses `uv` for Python package management. To get started with the Python scripts for validation and data analysis, follow these steps:
