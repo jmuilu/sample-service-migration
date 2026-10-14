@@ -1,18 +1,20 @@
 import:
-  targetTable: "sample.sample_type"
+  # sample.cv_sample_type (sample-service ADR 0036): the vocabulary is keyed by term, the normalized legacy
+  # abbreviation. rank, deprecated and is_system take their column defaults (1, false, false).
+  targetTable: "sample.cv_sample_type"
   operation: "UPSERT"
   batchSize: 100
   naturalKeys:
-    - "name"
+    - "term"
   columnMappings:
-    - csv: "NAME"
-      column: "name"
-      type: "VARCHAR"
     - csv: "ABBREVIATION"
-      column: "abbreviation"
+      column: "term"
       type: "VARCHAR"
       transformScript: "config/scripts/sample_type_transform.js"
       transformFunction: "transformAbbreviation"
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
     - csv: "DESCRIPTION"
       column: "description"
       type: "VARCHAR"

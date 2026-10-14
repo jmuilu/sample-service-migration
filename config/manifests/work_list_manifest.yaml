@@ -24,6 +24,14 @@ import:
     - csv: "COMMENT"
       column: "remarks"
       type: "VARCHAR"
+    # Core's ids, no foreign key; blank stays NULL (the biobank itself). priority is not mapped: DB2
+    # BATCH_LIST has no priority, so the column default (3, normal) applies.
+    - csv: "PROJECT_ID"
+      column: "project_id"
+      type: "BIGINT"
+    - csv: "PARTNER_ID"
+      column: "partner_id"
+      type: "BIGINT"
     - csv: "USERNAME"
       column: "userstamp"
       type: "VARCHAR"

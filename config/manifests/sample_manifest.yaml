@@ -14,13 +14,10 @@ import:
       column: "subjectid"
       type: "VARCHAR"
     - csv: "SAMPLETYPE"
-      column: "sample_type_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "sample.sample_type"
-        parentNaturalKey:
-          - csv: "SAMPLETYPE"
-            column: "name"
+      column: "sample_type"
+      type: "VARCHAR"
+      transformScript: "config/scripts/sample_type_transform.js"
+      transformFunction: "transformSampleTypeTerm"
     - csv: "SAMPLE_STATUS"
       column: "sample_status"
       type: "VARCHAR"

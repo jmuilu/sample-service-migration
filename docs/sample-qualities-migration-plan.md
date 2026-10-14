@@ -19,7 +19,7 @@ This document details the strategy and step-by-step execution playbook to migrat
    - PK: `term` `VARCHAR(64)`
 2. **`sample.sample_type_quality_metadata`**: Metadata defining which qualities are allowed for which sample types.
    - PK: `id` `BIGINT` (auto-sequence)
-   - Unique: `(sample_type_id, quality)`
+   - Unique: `(sample_type, quality)`
 3. **`sample.sample_quality`**: Mapping table linking a sample to its quality code(s).
    - PK: `id` `BIGINT` (auto-sequence)
    - FK: `sample_id` `BIGINT` (references `sample.sample`)
@@ -51,7 +51,7 @@ To satisfy the target trigger constraint, allowed combinations are derived from 
 
 | DB2 Column | DB2 Type | Postgres Column | PG Type | Lookup / Transformation |
 |------------|----------|-----------------|---------|-------------------------|
-| `SAMPLETYPE` | VARCHAR | `sample_type_id` | BIGINT | **LOOKUP**: `sample_type` name → `id` |
+| `SAMPLETYPE` | VARCHAR | `sample_type` | VARCHAR(64) | **TERM**: sample type name → `transformSampleTypeTerm` → `cv_sample_type.term` (ADR 0036; no id lookup) |
 | `QUALITY` | VARCHAR | `quality` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
 | (hardcoded)| — | `userstamp` | VARCHAR(128) | Hardcode `'migration'` |
 | (hardcoded)| — | `version` | INTEGER | Hardcode `1` |
@@ -166,6 +166,6 @@ Run the following validation queries on Postgres to verify correct data load:
    ```sql
    -- DNA sample type does not allow 'HEMOLYTIC'
    INSERT INTO sample.sample_quality (sample_id, quality) 
-   VALUES ((SELECT id FROM sample.sample WHERE sample_type_id = (SELECT id FROM sample.sample_type WHERE name = 'DNA') LIMIT 1), 'HEMOLYTIC');
+   VALUES ((SELECT id FROM sample.sample WHERE sample_type = (SELECT term FROM sample.cv_sample_type WHERE name = 'DNA') LIMIT 1), 'HEMOLYTIC');
    ```
    *Expected Outcome*: Blocked with error: `Laatukoodi HEMOLYTIC ei ole sallittu näytetyypille...`

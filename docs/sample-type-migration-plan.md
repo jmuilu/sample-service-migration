@@ -3,7 +3,15 @@
 > [!IMPORTANT]
 > This document contains legacy design references to a custom Java 'loader' application. The project has migrated to a generic, script-based ETL model using `exporter2026`, `importer2026`, and JS/SpEL manifests. Refer to [LLM_MIGRATION_RUNBOOK.md](file:///Users/muilu/git/others/biobank-solution/sample-service-migration/LLM_MIGRATION_RUNBOOK.md) for the active design and execution playbook.
 
-This plan outlines the steps, mappings, rules, and validations required to migrate **Sample Types** from the legacy DB2 database (table `BIOBANK3.SAMPLEGROUP`) to the target PostgreSQL `sample-service` database (table `sample.sample_type`).
+This plan outlines the steps, mappings, rules, and validations required to migrate **Sample Types** from the legacy DB2 database (table `BIOBANK3.SAMPLEGROUP`) to the target PostgreSQL `sample-service` database (table `sample.cv_sample_type`, formerly `sample.sample_type`).
+
+> [!NOTE]
+> **Since sample-service ADR 0036 (S8)** the target is the vocabulary `sample.cv_sample_type`, keyed by `term` (the
+> normalized legacy abbreviation). There is no numeric `id`, no `abbreviation` column and no `sample_type_id_seq`.
+> Every dependent column (`sample.sample_type`, `sample_type_quality_metadata.sample_type`,
+> `sample_profile_primary_sample.sample_type`, `sample_profile_aliquot_sample.sample_type`) holds the **term**, derived from
+> the sample type name by `transformSampleTypeTerm`; see section 3.B. Sections below that mention `id`, `abbreviation`
+> or the sequence describe the pre-ADR-0036 design.
 
 ---
 
@@ -25,15 +33,17 @@ The source table represents classifications of biological samples.
 | `FOLDERNAME` | `VARCHAR(50)` | Yes | Legacy grouping folder (Not used, will be dropped) |
 | `OWNER` | `VARCHAR(128)` | Yes | Owner namespace (Not used, will be dropped) |
 
-### Target Database (PostgreSQL: `sample.sample_type`)
-The target table contains the simplified schema for sample types.
+### Target Database (PostgreSQL: `sample.cv_sample_type`)
+The target table is the sample type vocabulary.
 
 | Column Name | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `BIGINT` | `PRIMARY KEY` (seq auto-generated) | New surrogate ID generated via `sample.sample_type_id_seq` |
-| `name` | `VARCHAR(128)` | `NOT NULL`, `UNIQUE` | Distinct sample type name |
-| `abbreviation`| `VARCHAR(20)` | `NOT NULL`, `UNIQUE` | Normalized, readable short code |
+| `term` | `VARCHAR(64)` | `PRIMARY KEY` | Normalized legacy abbreviation; the key every dependent column holds |
+| `name` | `VARCHAR(128)` | `NOT NULL` | Distinct sample type name |
 | `description` | `TEXT` | `NULL` | Detailed description |
+| `rank` | `INTEGER` | `NOT NULL`, `DEFAULT 1` | Loaded as the default `1` |
+| `deprecated` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Loaded as the default `false` |
+| `is_system` | `BOOLEAN` | `NOT NULL`, `DEFAULT false` | Loaded as the default `false` |
 | `userstamp` | `VARCHAR(128)` | `NOT NULL` | Username of modification/migration |
 | `created` | `TIMESTAMP` | `NOT NULL` | Creation timestamp |
 | `version` | `INTEGER` | `NOT NULL`, `DEFAULT 1` | Optimistic locking version |
@@ -88,9 +98,10 @@ For the 9 active sample types, the recommended mapping is:
 
 For other inactive sample types, a fallback algorithm will convert the name to a clean, uppercase slug (e.g., `'Buccal swab'` → `'BS'`, `'Urine'` → `'URINE'`), checking for uniqueness.
 
-### B. ID Generation
-* **Rule**: Drop DB2 `GROUPNR`. Let Postgres automatically assign sequence-based IDs using `sample.sample_type_id_seq`.
-* **Reason**: Prevents future sequence gap problems and follows the target schema design where `sample-service` manages sequence primary keys.
+### B. Term (replaces ID generation)
+* **Rule**: Drop DB2 `GROUPNR`. The `term` is the normalized abbreviation of the table above (`transformAbbreviation(NAME, ABBREVIATION)`); it must be unique and at most 64 characters.
+* **Dependents**: samples, quality metadata and both profile tables carry the term, computed from the sample type name by `transformSampleTypeTerm(name)` (same script, no database lookup). `cv_sample_type` is loaded first, so the foreign keys hold.
+* **Check**: `scripts/validation/validate_sample_type_terms.py` (run by `make transform-data`) fails on an empty, duplicate or over-long term, on a type name used by a dependent CSV that is not a legacy type, and when the two functions disagree (a non-numeric legacy abbreviation on a name not in the remapping table). On the 2026-10 export: 26 types, 26 distinct terms, longest 20 characters.
 
 ### C. Audit Columns
 * `userstamp`: Directly map from DB2 `USERNAME` column.
@@ -116,11 +127,11 @@ Create a new class `com.bcplatforms.samplemigration.load.SampleTypeLoader` under
 3. Construct and run SQL `INSERT` statements using `JdbcTemplate`. Use a transactional batch save for efficiency.
 4. Update the DB sequence status afterwards:
    ```sql
-   SELECT setval('sample.sample_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type), 1));
+   -- no sequence since ADR 0036: cv_sample_type is keyed by term
    ```
 
 ### Step 4.3: Verify & Hook into `LoaderApplication`
-In `LoaderApplication.java`, wire the `SampleTypeLoader` to run on startup or via a task trigger. Make sure it runs first in the loader chain (before `ContainerTypeLoader`, `ContainerLoader`, and `SampleLoader`), as all samples have a dependency on `sample_type_id`.
+In `LoaderApplication.java`, wire the `SampleTypeLoader` to run on startup or via a task trigger. Make sure it runs first in the loader chain (before `ContainerTypeLoader`, `ContainerLoader`, and `SampleLoader`), as all samples have a dependency on `sample_type` (the term).
 
 ---
 
@@ -130,29 +141,27 @@ In `LoaderApplication.java`, wire the `SampleTypeLoader` to run on startup or vi
 Verify that all 29 records from the source database are loaded.
 ```sql
 -- Postgres
-SELECT COUNT(*) FROM sample.sample_type;
+SELECT COUNT(*) FROM sample.cv_sample_type;
 -- Expected: 29
 ```
 
 ### SQL 5.2: Constraint Verification
 Verify there are no null values or duplicate constraints violated:
 ```sql
--- Check for NULL name or abbreviation
-SELECT * FROM sample.sample_type WHERE name IS NULL OR abbreviation IS NULL;
+-- Check for NULL name or term
+SELECT * FROM sample.cv_sample_type WHERE name IS NULL OR term IS NULL;
 
--- Check for duplicate names
-SELECT name, COUNT(*) FROM sample.sample_type GROUP BY name HAVING COUNT(*) > 1;
-
--- Check for duplicate abbreviations
-SELECT abbreviation, COUNT(*) FROM sample.sample_type GROUP BY abbreviation HAVING COUNT(*) > 1;
+-- Check for duplicate names (the term is the primary key, so it cannot repeat)
+SELECT name, COUNT(*) FROM sample.cv_sample_type GROUP BY name HAVING COUNT(*) > 1;
 ```
 
 ### SQL 5.3: Referential Verification
 Ensure that all sample types used in the samples table can be resolved correctly:
 ```sql
 -- After samples are loaded, run this to check for orphaned/unresolved sample types
-SELECT DISTINCT s.sampletype 
-FROM sample.sample s 
-WHERE s.sample_type_id IS NULL;
+SELECT DISTINCT s.sample_type
+FROM sample.sample s
+LEFT JOIN sample.cv_sample_type t ON t.term = s.sample_type
+WHERE t.term IS NULL;
 -- Expected: 0 rows returned
 ```

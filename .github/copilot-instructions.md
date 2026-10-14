@@ -75,7 +75,7 @@ Required flags:
 ### Migration Scope (M1+M2)
 
 4 core tables - manifests configured, CSV files exported:
-1. `sample_type`: SAMPLEGROUP → sample.sample_type
+1. `sample_type`: SAMPLEGROUP → sample.cv_sample_type (keyed by `term`)
 2. `container_type`: CONTAINERTYPE → sample.container_type  
 3. `container`: CONTAINER → sample.container (self-referential)
 4. `sample`: VIEW_SAMPLE_MASTER → sample.sample (self-referential)

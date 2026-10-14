@@ -16,13 +16,17 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 
 ## Core Table Mappings
 
-### 1. SAMPLE_TYPE: `BIOBANK3.SAMPLEGROUP` → `sample.sample_type`
+### 1. SAMPLE_TYPE: `BIOBANK3.SAMPLEGROUP` → `sample.cv_sample_type`
+
+Since sample-service ADR 0036 (S8) the table is the vocabulary `sample.cv_sample_type`, keyed by `term`; the numeric `id`,
+the `abbreviation` column and `sample_type_id_seq` are gone. Every column that held the type id holds the **term**.
 
 | DB2 Column | DB2 Type | Postgres Column | PG Type | Transformation |
 |-----------|----------|-----------------|---------|---|
-| GROUPNR | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.sample_type_id_seq` |
-| NAME | VARCHAR(128) | name | VARCHAR(128) | Direct copy; UNIQUE constraint |
-| ABBREVIATION | VARCHAR(5) | abbreviation | VARCHAR(20) | Direct copy; UNIQUE constraint |
+| GROUPNR | BIGINT | (dropped) | — | Do not use |
+| NAME | VARCHAR(128) | name | VARCHAR(128) | Direct copy |
+| ABBREVIATION (+ NAME) | VARCHAR(5) | term | VARCHAR(64) | **PRIMARY KEY**. `transformAbbreviation(NAME, ABBREVIATION)` in `sample_type_transform.js`: mapped abbreviation (`DNA`, `EWB`, `MS`...), else a non-numeric legacy abbreviation, else the upper-case alphanumeric slug of the name (max 20) |
+| (default) | — | rank, deprecated, is_system | INT, BOOL, BOOL | Column defaults `1`, `false`, `false` |
 | DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original; DB2 audit value |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original; DB2 audit value |
@@ -40,7 +44,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | DESCRIPTION | TEXT | description | TEXT | Direct copy, nullable |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
-| (new) | — | temperature_celsius | REAL | Hardcode default `21.0` |
+| (not loaded) | — | temperature | REAL | Stays NULL: only a FREEZER type has a temperature (v029, trigger) and it is set by the customer; the old `21.0` placeholder is not loaded |
 | (new) | — | version | INTEGER | Hardcode `1` |
 
 ### 3. CONTAINER: `BIOBANK3.CONTAINER` → `sample.container`
@@ -53,7 +57,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | TYPE | VARCHAR(64) | container_type_id | BIGINT (FK) | **LOOKUP**: `TYPE` → `sample.container_type.name` → new `id` |
 | PARENT | BIGINT (self-FK) | parent_container_id | BIGINT (FK, self) | **SELF-REF LOOKUP**: `PARENT` → `CONTAINER.NAME` → new `id` in `sample.container`; nullable |
 | PLACECODE | VARCHAR(64) | placecode | VARCHAR(16) | Direct copy; nullable; part of UNIQUE `(parent_container_id, placecode)` |
-| TEMPERATURE | DOUBLE | temperature_celsius | REAL | Direct copy; nullable |
+| TEMPERATURE | DOUBLE | temperature | REAL | Direct copy for containers of a freezer type; blanked (reported) by `scripts/filter_container_temperature.py` for every other container, since a trigger rejects it (v029) |
 | USERNAME | VARCHAR(128) | userstamp | VARCHAR(128) | Preserve original |
 | TIMELOG | TIMESTAMP | created | TIMESTAMP | Preserve original |
 | (new) | — | version | INTEGER | Hardcode `1` |
@@ -67,7 +71,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | (surrogate PK) | BIGINT | (dropped) | — | Do not use; new `id` auto-generated via `sample.sample_id_seq` |
 | SAMPLEID | VARCHAR(64) | sampleid | VARCHAR(64) | Direct copy; **business ID** — UNIQUE constraint |
 | SUBJECT | VARCHAR(64) | subjectid | VARCHAR(64) | Direct copy; loose reference (no FK), nullable |
-| SAMPLETYPE | VARCHAR(128) | sample_type_id | BIGINT (FK) | **LOOKUP**: `SAMPLETYPE` name → `sample.sample_type.name` → new `id` |
+| SAMPLETYPE | VARCHAR(128) | sample_type | VARCHAR(64) (FK) | **TERM**: `SAMPLETYPE` name → `transformSampleTypeTerm` → `sample.cv_sample_type.term` (no id lookup) |
 | SAMPLE_STATUS | VARCHAR(32) | sample_status | VARCHAR(32) | **ENUM REMAP**: lookup in remap table; CHECK `IN ('PENDING','AVAILABLE','NOT_AVAILABLE')` |
 | AMOUNT | INTEGER | amount | INTEGER | Direct copy; nullable; unit: microliters |
 | CONCENTRATION | REAL | concentration | REAL | Direct copy; nullable |
@@ -119,7 +123,7 @@ Maps the existing DB2 schema (schemas `BIOBANK3`, `BCPROJECT`, `CORE`) to the ne
 | DB2 Column | DB2 Type | Postgres Column | PG Type | Lookup / Transformation |
 |------------|----------|-----------------|---------|-------------------------|
 | (surrogate PK)| — | (dropped) | — | Do not use; PG auto-generates surrogate `id` |
-| `SAMPLETYPE` | VARCHAR | `sample_type_id` | BIGINT (FK) | **LOOKUP**: sample type `name` → look up `sample.sample_type.id` |
+| `SAMPLETYPE` | VARCHAR | `sample_type` | VARCHAR(64) (FK) | **TERM**: sample type `name` → `transformSampleTypeTerm` → `sample.cv_sample_type.term` |
 | `QUALITY` | VARCHAR | `quality` | VARCHAR(64) | Direct copy (references `cv_sample_quality.term`) |
 | (hardcoded) | — | `userstamp` | VARCHAR(128)| Hardcode `'migration'` |
 | (hardcoded) | — | `version` | INTEGER | Hardcode `1` |
@@ -162,7 +166,7 @@ Actual distinct values in DB2 `CONTAINERTYPE` include several legacy/specialty v
 1. **`BIOBANK3.VIEW_SAMPLE_MASTER` columns verified (Resolved)**:
    A live database query confirmed that the view `BIOBANK3.VIEW_SAMPLE_MASTER` exists and contains the necessary columns:
    - `CONTAINER_NAME` (VARCHAR 64, nullable) — ready for natural key resolution.
-   - `SAMPLETYPE` (VARCHAR 128, non-null) — ready for mapping to `sample_type_id`.
+   - `SAMPLETYPE` (VARCHAR 128, non-null) — ready for mapping to `sample_type` (the term).
    - `PARENT_SAMPLEID` (VARCHAR 64, nullable) — ready for self-referential lookup.
    - `SAMPLEID` (VARCHAR 64), `SUBJECT` (VARCHAR 64), `AMOUNT` (INTEGER), `CONCENTRATION` (REAL), `USERNAME` (VARCHAR 128), and `TIMELOG` (TIMESTAMP).
 
@@ -174,7 +178,7 @@ Actual distinct values in DB2 `CONTAINERTYPE` include several legacy/specialty v
 
 The `importer2026` application resolves all FKs via **natural keys**, not surrogate IDs, as defined in the YAML manifest files.
 
-1. **`sample_type_id`**: lookup `sample_type` by `(name, abbreviation)` — both columns uniquely identify a row
+1. **`sample_type`** (sample, quality metadata, both profile tables): not an id lookup. The column is a foreign key to `cv_sample_type.term`, filled by `transformSampleTypeTerm(name)`; `make transform-data` runs `scripts/validation/validate_sample_type_terms.py` (terms unique, <= 64 chars, every used name is a legacy type)
 2. **`container_type_id`**: lookup `container_type` by `name`
 3. **`container_id`** (on sample): lookup `container` by `name` (barcode)
 4. **`parent_container_id`** (self): lookup `container` by `name` (barcode)
@@ -196,6 +200,9 @@ The local `project`, `partner` and `project_membership` tables no longer exist, 
 |---|---|---|
 | `BATCH_LIST.PROJECT_ID` | `task.project_id` (`bigint`) | Core's project id; no foreign key. Exported by `scripts/export_batch_lists.py` |
 | `BATCH_LIST.PARTNER_ID` | `task.partner_id` (`bigint`) | Always null in the current DB2 data, so it stays NULL; the old "Missing Partner" placeholder is gone |
+| `BATCH_LIST.PROJECT_ID` | `work_list.project_id` (`bigint`) | Same value as on the task (v028); no foreign key; NULL = the biobank's internal project |
+| `BATCH_LIST.PARTNER_ID` | `work_list.partner_id` (`bigint`) | Same value as on the task (v028); NULL = the biobank itself |
+| (none) | `work_list.priority` | DB2 has no priority; not loaded, so the default `3` (normal; allowed 1..5, 1 = most urgent) applies |
 | `SAMPLE_10002.PROJECT_ID` | `sample.project_id` (`bigint`) | Core's project id of the owning project (3 of 4 samples in bcdemo have one) |
 | `SAMPLE_10002.COLLECTION_ID` | `sample.collection_id` (`bigint`) | Core's consent collection id |
 

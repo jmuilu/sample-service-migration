@@ -1,7 +1,7 @@
 import:
   targetTable: "sample.sample_profile_primary_sample"
   # INSERT, not UPSERT: this table has no unique constraint matching (sample_profile_id,
-  # sample_type_id, sort_order) - ON CONFLICT needs a real constraint to target, unlike
+  # sample_type, sort_order) - ON CONFLICT needs a real constraint to target, unlike
   # sample_type_quality_metadata's uq_sample_type_quality. naturalKeys is still declared
   # so downstream FK resolution (sample_profile_aliquot_sample's parent lookup) and
   # self-join row registration still work - see docs/sample-profile-migration-plan.md §4.
@@ -11,7 +11,7 @@ import:
     onMissingFK: "NULL"
   naturalKeys:
     - "sample_profile_id"
-    - "sample_type_id"
+    - "sample_type"
     - "sort_order"
   columnMappings:
     - csv: "PROFILE_NAME"
@@ -23,13 +23,10 @@ import:
           - csv: "PROFILE_NAME"
             column: "name"
     - csv: "SAMPLE_TYPE_NAME"
-      column: "sample_type_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "sample.sample_type"
-        parentNaturalKey:
-          - csv: "SAMPLE_TYPE_NAME"
-            column: "name"
+      column: "sample_type"
+      type: "VARCHAR"
+      transformScript: "config/scripts/sample_type_transform.js"
+      transformFunction: "transformSampleTypeTerm"
     - csv: "AMOUNT"
       column: "amount"
       type: "INTEGER"

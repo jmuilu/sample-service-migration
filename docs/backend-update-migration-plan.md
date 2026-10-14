@@ -150,7 +150,7 @@ This target executes:
 ### Step 4: Verification Checks
 ```sql
 -- Verify table row counts in PostgreSQL
-SELECT 'sample_type' AS tab, COUNT(*) FROM sample.sample_type
+SELECT 'cv_sample_type' AS tab, COUNT(*) FROM sample.cv_sample_type
 UNION ALL SELECT 'container_type', COUNT(*) FROM sample.container_type
 UNION ALL SELECT 'container', COUNT(*) FROM sample.container
 UNION ALL SELECT 'sample', COUNT(*) FROM sample.sample

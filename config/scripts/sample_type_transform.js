@@ -35,3 +35,21 @@ function transformAbbreviation(name, oldAbbr) {
     }
     return cleaned === "" ? "UNKN" : cleaned;
 }
+
+
+/**
+ * Maps a sample type name, as carried by the dependent CSVs (samples, profiles, qualities), to the term of
+ * sample.cv_sample_type (sample-service ADR 0036). The term is the normalized legacy abbreviation computed by
+ * transformAbbreviation, and the dependent columns are foreign keys to it, so there is no id lookup. Only the
+ * name is known here: scripts/validation/validate_sample_type_terms.py fails the run if this differs from
+ * transformAbbreviation for a legacy type (a non-numeric legacy abbreviation on a name that is not mapped above).
+ * @param {string} rawValue - The sample type name (e.g., 'EDTA Plasma')
+ * @param {java.util.Map} row - The full CSV row map (unused)
+ * @returns {string} The term, or null when the name is blank
+ */
+function transformSampleTypeTerm(rawValue, row) {
+    if (rawValue === null || rawValue === undefined || String(rawValue).trim() === "") {
+        return null;
+    }
+    return transformAbbreviation(String(rawValue), null);
+}

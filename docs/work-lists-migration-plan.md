@@ -61,7 +61,7 @@ The unique business key for work lists is the `name` column.
 | `BEGIN_TIME` | `created` | `TIMESTAMP` | Direct copy of creation timestamp. |
 | (hardcoded) | `version` | `INTEGER` | Hardcode `1`. |
 | `COMMENT` | `remarks` | `TEXT` | Direct copy (nullable). |
-| `PROJECT_ID` | (dropped) | — | Dropped (or mapped to comment if needed). |
+| `PROJECT_ID` | `project_id` | `BIGINT` | Core's project id, no FK (sample-service v028); NULL = the biobank's internal project. `PARTNER_ID` maps to `partner_id` the same way (NULL = the biobank itself). `priority` is not loaded (DB2 has none): default `3`, allowed 1..5. |
 | `PARENT_ID` | `parent_id` | `BIGINT` | **FK Lookup** against `sample.work_list` using `PARENT_NAME` (resolved via self-join on `PARENT_ID = parent.ID` in the export query). |
 | `CONTAINER_ID` | (dropped) | — | Dropped (always NULL in source). |
 | `SOP_ID` | (dropped) | — | Dropped (unused protocol linkage). |

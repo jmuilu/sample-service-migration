@@ -8,13 +8,13 @@ import:
     onMissingFK: "NULL"
   naturalKeys:
     - "sample_profile_primary_sample_id"
-    - "sample_type_id"
+    - "sample_type"
     - "sort_order"
   columnMappings:
     # sample_profile_primary_sample has no literal business-key column of its own
     # (only FK/computed columns), so the parent match is composite against its
-    # own (sample_profile_id, sample_type_id, sort_order). PRIMARY_PROFILE_ID /
-    # PRIMARY_SAMPLE_TYPE_ID are pre-resolved literal ids written by
+    # own (sample_profile_id, sample_type, sort_order). PRIMARY_PROFILE_ID /
+    # PRIMARY_SAMPLE_TYPE (a cv_sample_type term) are pre-resolved literals written by
     # scripts/enrich_sample_profile_aliquots.py — see docs/sample-profile-migration-plan.md.
     - csv: "PRIMARY_PROFILE_ID"
       column: "sample_profile_primary_sample_id"
@@ -24,18 +24,15 @@ import:
         parentNaturalKey:
           - csv: "PRIMARY_PROFILE_ID"
             column: "sample_profile_id"
-          - csv: "PRIMARY_SAMPLE_TYPE_ID"
-            column: "sample_type_id"
+          - csv: "PRIMARY_SAMPLE_TYPE"
+            column: "sample_type"
           - csv: "PRIMARY_RANK"
             column: "sort_order"
     - csv: "ALIQUOT_SAMPLE_TYPE_NAME"
-      column: "sample_type_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "sample.sample_type"
-        parentNaturalKey:
-          - csv: "ALIQUOT_SAMPLE_TYPE_NAME"
-            column: "name"
+      column: "sample_type"
+      type: "VARCHAR"
+      transformScript: "config/scripts/sample_type_transform.js"
+      transformFunction: "transformSampleTypeTerm"
     - csv: "AMOUNT"
       column: "amount"
       type: "INTEGER"

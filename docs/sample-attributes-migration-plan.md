@@ -166,13 +166,13 @@ data. It becomes meaningful the moment a populated environment has real values.
 -- attributes must always be a JSON object, never null/array/scalar (DB CHECK already enforces
 -- this, but confirm no manifest bug produced something the CHECK somehow let through)
 SELECT sampleid, attributes FROM sample.sample
-WHERE sample_type_id = (SELECT id FROM sample.sample_type WHERE abbreviation = 'DNA')
+WHERE sample_type = 'DNA'
   AND attributes != '{}'::jsonb;
 
 -- volume_ext should only be populated for DNA samples in this dataset
-SELECT st.abbreviation, count(*) FILTER (WHERE s.volume_ext IS NOT NULL) AS with_volume_ext
-FROM sample.sample s JOIN sample.sample_type st ON st.id = s.sample_type_id
-GROUP BY st.abbreviation;
+SELECT s.sample_type, count(*) FILTER (WHERE s.volume_ext IS NOT NULL) AS with_volume_ext
+FROM sample.sample s
+GROUP BY s.sample_type;
 
 -- new provenance columns: spot-check coverage
 SELECT count(*) FILTER (WHERE source IS NOT NULL) AS with_source,

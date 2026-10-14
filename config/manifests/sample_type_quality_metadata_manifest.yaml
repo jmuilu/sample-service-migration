@@ -4,17 +4,14 @@ import:
   errorHandling:
     onMissingFK: "SKIP"
   naturalKeys:
-    - "sample_type_id"
+    - "sample_type"
     - "quality"
   columnMappings:
     - csv: "SAMPLETYPE"
-      column: "sample_type_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "sample.sample_type"
-        parentNaturalKey:
-          - csv: "SAMPLETYPE"
-            column: "name"
+      column: "sample_type"
+      type: "VARCHAR"
+      transformScript: "config/scripts/sample_type_transform.js"
+      transformFunction: "transformSampleTypeTerm"
     - csv: "QUALITY"
       column: "quality"
       type: "VARCHAR"

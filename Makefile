@@ -86,13 +86,17 @@ transform-data:
 	@echo "ADR 0017 only registered DNA's attributes. See docs/sample-attributes-migration-plan.md."
 	@echo "Generating sample type quality metadata CSV..."
 	@.venv/bin/python3 scripts/generate_quality_metadata.py
+	@echo "Checking the sample type -> cv_sample_type.term mapping (unique, <= 64 chars, covers every user)..."
+	@.venv/bin/python3 scripts/validation/validate_sample_type_terms.py
+	@echo "Blanking container temperatures on non-freezer containers (freezer-only in the target)..."
+	@.venv/bin/python3 scripts/filter_container_temperature.py
 	@echo "Filtering picking-list events out of legacy sample events..."
 	@.venv/bin/python3 scripts/filter_legacy_events.py
 	@echo "✓ Transformation complete."
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, sample.sample_profile_sample_column, sample.sample_profile_aliquot_sample, sample.sample_profile_primary_sample, sample.sample_profile, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.sample_type, sample.cv_sample_quality CASCADE;"
+	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, sample.sample_profile_sample_column, sample.sample_profile_aliquot_sample, sample.sample_profile_primary_sample, sample.sample_profile, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.cv_sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
@@ -126,7 +130,6 @@ load-target:
 	@echo "Resetting PostgreSQL sequences..."
 
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
-		SELECT setval('sample.sample_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type), 1)); \
 		SELECT setval('sample.container_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.container_type), 1)); \
 		SELECT setval('sample.container_id_seq', COALESCE((SELECT MAX(id) FROM sample.container), 1)); \
 		SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1)); \
@@ -149,7 +152,7 @@ migrate-all: clear-target extract-data transform-data load-target verify
 verify:
 	@echo "Comparing source and target database counts..."
 	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
-		SELECT 'sample_type' AS tab, COUNT(*) FROM sample.sample_type \
+		SELECT 'cv_sample_type' AS tab, COUNT(*) FROM sample.cv_sample_type \
 		UNION ALL SELECT 'container_type', COUNT(*) FROM sample.container_type \
 		UNION ALL SELECT 'container', COUNT(*) FROM sample.container \
 		UNION ALL SELECT 'sample', COUNT(*) FROM sample.sample \

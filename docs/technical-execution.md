@@ -40,10 +40,10 @@ graph TD
 ```
 
 ### Detailed Order:
-1. **`sample.sample_type`**: Independent (depends on no other tables).
+1. **`sample.cv_sample_type`** (keyed by `term`, ADR 0036): Independent (depends on no other tables).
 2. **`sample.container_type`**: Independent.
 3. **`sample.container`**: Depends on `container_type_id`. Also contains a self-referential hierarchy `parent_container_id`.
-4. **`sample.sample`**: Depends on `sample_type_id` and `container_id`. Also contains a self-referential hierarchy `parent_id` (aliquots reference primary sample).
+4. **`sample.sample`**: Depends on `sample_type` (the term) and `container_id`. Also contains a self-referential hierarchy `parent_id` (aliquots reference primary sample).
 
 ---
 
@@ -98,7 +98,7 @@ To make the loader operational, the following classes should be added under `loa
 - Normalize abbreviations (e.g. `10003` → `DNA`).
 - Batch insert using `JdbcTemplate`:
   ```sql
-  INSERT INTO sample.sample_type (name, abbreviation, description, userstamp, created, version)
+  INSERT INTO sample.cv_sample_type (name, term, description, userstamp, created, version)
   VALUES (?, ?, ?, ?, ?, 1)
   ON CONFLICT (name) DO NOTHING;
   ```
@@ -122,7 +122,7 @@ To make the loader operational, the following classes should be added under `loa
 - **Solution**:
   - *Pass 1*: Insert all samples where `PARENT_SAMPLEID = NULL` (primary samples).
   - *Pass 2*: Insert all samples where `PARENT_SAMPLEID` is not null (aliquots).
-- Lookup `sample_type_id` via `NaturalKeyResolver.resolveSampleTypeId(name, abbr)`.
+- `sample_type` is the term of `cv_sample_type`, derived from the type name (no id lookup; the retired `NaturalKeyResolver.resolveSampleTypeId` is obsolete).
 - Lookup `container_id` via `NaturalKeyResolver.resolveContainerId(containerName)`.
 - Lookup `parent_id` via `NaturalKeyResolver.resolveSampleId(parentSampleid)`.
 - Map `SAMPLE_STATUS` using updated `SampleStatusMapper` (handling space replacement, e.g., `'Not available'` → `'NOT_AVAILABLE'`).
@@ -134,7 +134,6 @@ To make the loader operational, the following classes should be added under `loa
 Since the loaders will insert rows with explicit IDs or rely on sequences, target database sequence counters must be updated to match the maximum primary key values.
 Run the following SQL script post-migration:
 ```sql
-SELECT setval('sample.sample_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample_type), 1));
 SELECT setval('sample.container_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.container_type), 1));
 SELECT setval('sample.container_id_seq', COALESCE((SELECT MAX(id) FROM sample.container), 1));
 SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1));
