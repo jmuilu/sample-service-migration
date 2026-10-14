@@ -1,6 +1,7 @@
 /**
- * Maps and normalizes DB2 CONTAINERTYPE basetype values to Postgres container_type basetype enum:
- * 'SITE', 'FREEZER', 'RACK', 'SHELF', 'BOX', 'PLATE'
+ * Maps and normalizes DB2 CONTAINERTYPE basetype values to a sample.cv_container_basetype term:
+ * 'SITE', 'FREEZER', 'RACK', 'SHELF', 'BOX', 'PLATE', and the virtual 'TRASH' and 'USED' (sample-service ADR 0034:
+ * legacy Trash holds the legacy 'used' containers Empty, Lost and Picked).
  *
  * @param {string} rawValue - The raw basetype from DB2 (e.g., 'freezer', 'trash', 'no-location')
  * @param {object} rowMap - The entire row context as a map
@@ -21,8 +22,8 @@ function transformBasetype(rawValue, rowMap) {
         "BOX": "BOX",
         "PLATE": "PLATE",
         "SITE": "SITE",
-        "TRASH": "SITE",
-        "USED": "SITE",
+        "TRASH": "TRASH",
+        "USED": "USED",
         "MEGA": "PLATE",
         "ASA": "PLATE",
         "NO-LOCATION": "SITE"

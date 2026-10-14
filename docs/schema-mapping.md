@@ -151,8 +151,8 @@ Actual distinct values in DB2 `CONTAINERTYPE` include several legacy/specialty v
 | `box` | → | `BOX` | Case normalization |
 | `plate` | → | `PLATE` | Case normalization |
 | `no-location` | → | **FAIL / TBD** | Used by 2 containers. Needs mapping strategy (e.g. map to `SITE` or exclude). |
-| `trash` | → | **FAIL / TBD** | Used by 1 container (`Trash`). Needs mapping strategy. |
-| `used` | → | **FAIL / TBD** | Used by 3 containers (`Empty`, `Lost`, `Picked`). Needs mapping strategy. |
+| `trash` | → | `TRASH` | Used by 1 container (`Trash`). Virtual basetype (sample-service ADR 0034, 2026-10-14). |
+| `used` | → | `USED` | Used by 3 containers (`Empty`, `Lost`, `Picked`), which sit inside `Trash`. New virtual basetype nested under `TRASH` (ADR 0034). |
 | `ASA`, `drawer`, `MEGA` | → | **FAIL** | Defined in `CONTAINERTYPE` but currently used by 0 containers. |
 
 ---
