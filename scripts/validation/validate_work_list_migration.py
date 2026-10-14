@@ -6,7 +6,9 @@ import psycopg2
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from scripts.db2_config import connect_db2
 
-pg_conn_str = "host='localhost' port=5432 dbname='sample' user='dbadmin' password='dbadmin'"
+pg_conn_str = "host='{}' port={} dbname='sample' user='{}' password='{}'".format(
+    os.environ.get("PG_HOST", "localhost"), os.environ.get("PG_PORT", "5432"),
+    os.environ.get("PG_USER", "dbadmin"), os.environ.get("PG_PASSWORD", "dbadmin"))
 
 def run_validation():
     print("======================================================================")
@@ -128,7 +130,7 @@ def run_validation():
         # --- Check 4: Drift Detection View Check ---
         print("\n--- CHECK 4: Drift Detection View Status ---")
         try:
-            pg_cur.execute("SELECT COUNT(*) FROM sample.view_work_list_items WHERE is_drifted = true")
+            pg_cur.execute("SELECT COUNT(*) FROM sample.view_work_list_item WHERE is_drifted = true")
             drift_cnt = pg_cur.fetchone()[0]
             print(f"✓ Drift view query succeeded. Number of drifted samples in view: {drift_cnt}")
         except Exception as e:
