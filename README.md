@@ -51,7 +51,7 @@ Before you begin, ensure you have the following installed and configured:
 
 1. **Review the schema mapping**: `docs/schema-mapping.md`
 2. **Extract from DB2**: `make extract-data` (uses `exporter2026`; see `export/tables.md` for CLI details)
-3. **Load into Postgres**: `make load-target` (runs `importer2026` with config manifests and scripts)
+3. **Load into Postgres**: `make load-target` (runs `importer2026` with config manifests and scripts; the load declares itself a `MIGRATION` and the location history is backfilled afterwards, see `LLM_MIGRATION_RUNBOOK.md` step 4)
 4. **Validate**: `make validate-source` or `make verify` (row counts, FKs, enums, spot-checks)
 
 See `docs/migration-strategy.md` for the full 3-phase runbook and rollback plan.

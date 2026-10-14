@@ -73,6 +73,25 @@ Create `config/manifests/<target_table>_manifest.yaml` mapping the CSV to Postgr
    ```
 4. Verify row counts and spot-check data integrity.
 
+### Declaring the load a migration, and the location log (sample-service ADR 0027, ADR 0024)
+- **The importer's sessions declare `app.change_kind=MIGRATION`** (and a source component and a reason) through the JDBC URL
+  (`PG_URL` in the Makefile, `?options=-c app.change_kind=MIGRATION …`). Every audited write of the load is then a
+  `MIGRATION` row of the change log, and the seven-day back-dating window does not apply. No importer change is needed.
+- **The location log is rebuilt, not written by the load.** `sample.location_event` is written by triggers on `sample.sample`
+  and `sample.container`. A load-time event would carry the load time, not the time the legacy row was created, so
+  `make load-target` switches the two triggers off before the containers and samples are imported and switches them on
+  again right after the `sample.csv` import. It then runs `scripts/postgres/backfill_location_events.sql`: the initial
+  placement of every placed sample and container (from nothing to where it is, task `SYSTEM-DEFAULT`, time = the row's
+  creation time, one `MIGRATION` change-log row). Safe to run again; rows that already have an event are skipped.
+- **`make verify` fails** (`scripts/validation/check_location_log.sql`) if either trigger is still disabled (a load stopped
+  half-way: re-enable with `ALTER TABLE sample.sample ENABLE TRIGGER location_event_sample_trigger; ALTER TABLE sample.container
+  ENABLE TRIGGER location_event_container_trigger;`) or if the log disagrees with the columns (`sample.view_location_event_gaps`).
+- **Delta loads and production cutover** (no `TRUNCATE`): the backfill only adds events for rows that have none, so a
+  re-run after an upsert-load adds the new placements; a placement that *changed* in the source between two loads is not
+  logged as a move by the load. The delta approach for location history is not designed yet.
+- To load into another PostgreSQL (a scratch one for a test), override `PSQL`, `PG_URL`, `PG_USER`, `PG_PASSWORD` on the command
+  line, and `PG_HOST`/`PG_PORT` for the profile enrichment script. Never point a test at the shared development database.
+
 ---
 
 ## 4. Sibling Project Paths & Connections

@@ -22,9 +22,14 @@ export TZ := $(SOURCE_TZ)
 export JAVA_TOOL_OPTIONS := -Duser.timezone=$(SOURCE_TZ) $(JAVA_TOOL_OPTIONS)
 
 # Postgres Target Connection
-PG_URL = jdbc:postgresql://localhost:5432/sample
-PG_USER = dbadmin
-PG_PASSWORD = dbadmin
+# The importer's sessions declare themselves a migration (sample-service ADR 0027, 0024): app.change_kind=MIGRATION makes every
+# audited write a MIGRATION row of the change log and lifts the seven-day back-dating window. PG_URL is the importer's JDBC URL;
+# PSQL is how the Makefile runs SQL (override both, and PG_USER/PG_PASSWORD, to load into another PostgreSQL, for example a
+# scratch one: make load-target PSQL='docker exec -i scratch psql -U postgres -d sample' PG_URL=... ).
+PG_URL ?= jdbc:postgresql://localhost:5432/sample?options=-c%20app.change_kind=MIGRATION%20-c%20app.source_component=sample-service-migration%20-c%20app.change_reason=DB2-migration
+PG_USER ?= dbadmin
+PG_PASSWORD ?= dbadmin
+PSQL ?= docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample
 
 .PHONY: help plan validate-source extract-data transform-data clear-target load-target verify migrate-all clean check-ai-rules build-graph start-graphify-server
 
@@ -96,17 +101,22 @@ transform-data:
 
 clear-target:
 	@echo "Clearing PostgreSQL target tables..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, sample.sample_profile_sample_column, sample.sample_profile_aliquot_sample, sample.sample_profile_primary_sample, sample.sample_profile, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.cv_sample_type, sample.cv_sample_quality CASCADE;"
+	@$(PSQL) -c "TRUNCATE sample.event, sample.work_list_item, sample.work_list, sample.work_list_event, sample.task, sample.sample_profile_sample_column, sample.sample_profile_aliquot_sample, sample.sample_profile_primary_sample, sample.sample_profile, sample.sample_quality, sample.sample_type_quality_metadata, sample.sample, sample.container, sample.container_type, sample.cv_sample_type, sample.cv_sample_quality CASCADE;"
 
 load-target:
 	@echo "Loading seed data and vocabularies..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample < scripts/postgres/seed_qualities.sql
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "INSERT INTO sample.task (id, name, description, task_type, task_status, userstamp) VALUES (1, 'SYSTEM-DEFAULT', 'System default task for events without active context', 'MIGRATION', 'ACTIVE', 'migration') ON CONFLICT (id) DO NOTHING;"
+	@$(PSQL) < scripts/postgres/seed_qualities.sql
+	@$(PSQL) -c "INSERT INTO sample.task (id, name, description, task_type, task_status, userstamp) VALUES (1, 'SYSTEM-DEFAULT', 'System default task for events without active context', 'MIGRATION', 'ACTIVE', 'migration') ON CONFLICT (id) DO NOTHING;"
+	@echo "Switching the location log off for the bulk load; scripts/postgres/backfill_location_events.sql rebuilds it (sample-service ADR 0024)..."
+	@$(PSQL) -c "ALTER TABLE sample.container DISABLE TRIGGER location_event_container_trigger; ALTER TABLE sample.sample DISABLE TRIGGER location_event_sample_trigger;"
 	@echo "Importing table data..."
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/samplegroup.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/containertype.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/container_type_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/container.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/container_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
+	@echo "Switching the location log back on and backfilling the initial placements (sample-service ADR 0024 decision 11)..."
+	@$(PSQL) -c "ALTER TABLE sample.container ENABLE TRIGGER location_event_container_trigger; ALTER TABLE sample.sample ENABLE TRIGGER location_event_sample_trigger;"
+	@$(PSQL) -v ON_ERROR_STOP=1 < scripts/postgres/backfill_location_events.sql
 	@echo "Extending DNA samples with volume_ext / attributes (ADR 0015 / ADR 0017)..."
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_10003.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/dna_attributes_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/sample_type_quality_metadata.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/sample_type_quality_metadata_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
@@ -122,14 +132,14 @@ load-target:
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none --sort-self-joins'
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@echo "Migrating historical work list events..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
+	@$(PSQL) -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
+	@$(PSQL) -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
 	@echo "Migrating historical sample events..."
 	@$(IMPORTER_DIR)/gradlew -p $(IMPORTER_DIR) bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/legacy_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/event_manifest.yaml --spring.datasource.url=$(PG_URL) --spring.datasource.username=$(PG_USER) --spring.datasource.password=$(PG_PASSWORD) --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 	@echo "Resetting PostgreSQL sequences..."
 
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
+	@$(PSQL) -c "\
 		SELECT setval('sample.container_type_id_seq', COALESCE((SELECT MAX(id) FROM sample.container_type), 1)); \
 		SELECT setval('sample.container_id_seq', COALESCE((SELECT MAX(id) FROM sample.container), 1)); \
 		SELECT setval('sample.sample_id_seq', COALESCE((SELECT MAX(id) FROM sample.sample), 1)); \
@@ -151,7 +161,7 @@ migrate-all: clear-target extract-data transform-data load-target verify
 
 verify:
 	@echo "Comparing source and target database counts..."
-	@docker exec -i sample-service-db-1 psql -U $(PG_USER) -d sample -c "\
+	@$(PSQL) -c "\
 		SELECT 'cv_sample_type' AS tab, COUNT(*) FROM sample.cv_sample_type \
 		UNION ALL SELECT 'container_type', COUNT(*) FROM sample.container_type \
 		UNION ALL SELECT 'container', COUNT(*) FROM sample.container \
@@ -168,8 +178,10 @@ verify:
 		UNION ALL SELECT 'work_list_event', COUNT(*) FROM sample.work_list_event \
 		UNION ALL SELECT 'work_list_item', COUNT(*) FROM sample.work_list_item \
 		UNION ALL SELECT 'task', COUNT(*) FROM sample.task \
-		UNION ALL SELECT 'event', COUNT(*) FROM sample.event;"
+		UNION ALL SELECT 'event', COUNT(*) FROM sample.event \
+		UNION ALL SELECT 'location_event', COUNT(*) FROM sample.location_event;"
 	@.venv/bin/python3 scripts/validation/validate_work_list_migration.py
+	@$(PSQL) -v ON_ERROR_STOP=1 < scripts/validation/check_location_log.sql
 
 
 check-ai-rules:
