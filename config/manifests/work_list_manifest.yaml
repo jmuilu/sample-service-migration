@@ -35,7 +35,7 @@ import:
     - csv: "USERNAME"
       column: "userstamp"
       type: "VARCHAR"
-    - csv: "BEGIN_TIME"
+    - csv: "TIMELOG"
       column: "created"
       type: "TIMESTAMP"
       transformScript: "config/scripts/work_list_transform.js"

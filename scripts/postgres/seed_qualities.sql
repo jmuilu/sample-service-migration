@@ -1,4 +1,5 @@
 -- Seed Controlled Vocabulary of Sample Qualities
+SET TIME ZONE 'Europe/Helsinki';
 INSERT INTO sample.cv_sample_quality (term, name, description, rank, userstamp, created) VALUES
 ('CLOUDY', 'Cloudy', 'Cloudy', 1, 'DB2INST1', '2023-10-30 18:08:13'),
 ('HEMOLYTIC', 'Hemolytic', 'Hemolytic', 1, 'DB2INST1', '2023-10-30 18:08:13'),

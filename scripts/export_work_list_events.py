@@ -28,7 +28,7 @@ WITH created_events AS (
             )
             ELSE b.BATCH_STATUS
         END                               AS to_status,
-        b.BEGIN_TIME                      AS event_time,
+        COALESCE(b.TIMELOG, b.BEGIN_TIME) AS event_time,
         b.USERNAME                        AS event_user,
         b.PROJECT_ID                      AS project_id,
         b.COMMENT                         AS event_comment

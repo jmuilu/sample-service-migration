@@ -182,6 +182,7 @@ verify:
 		UNION ALL SELECT 'location_event', COUNT(*) FROM sample.location_event;"
 	@.venv/bin/python3 scripts/validation/validate_work_list_migration.py
 	@$(PSQL) -v ON_ERROR_STOP=1 < scripts/validation/check_location_log.sql
+	@.venv/bin/python3 scripts/validation/validate_timestamps.py
 
 
 check-ai-rules:

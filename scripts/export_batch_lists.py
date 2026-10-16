@@ -38,7 +38,7 @@ try:
         writer = csv.writer(csvfile)
         # Write headers matching work_list_manifest and task_manifest requirements
         writer.writerow([
-            "NAME", "BEGIN_TIME", "PROJECT_ID", 
+            "NAME", "BEGIN_TIME", "TIMELOG", "PROJECT_ID", 
             "BATCH_STATUS", "COMMENT", "ISPICK", "PARTNER_ID", "USERNAME", "PARENT_NAME"
         ])
         
@@ -49,6 +49,7 @@ try:
             
             name = row_upper.get("NAME")
             begin_time = row_upper.get("BEGIN_TIME")
+            timelog = row_upper.get("TIMELOG") or begin_time
             project_id = row_upper.get("PROJECT_ID")
             partner_id = row_upper.get("PARTNER_ID")
             batch_status = row_upper.get("BATCH_STATUS")
@@ -68,7 +69,7 @@ try:
             # Core's ids go straight into sample.task (ADR 0032, no local project tables). PARTNER_ID is
             # always null in this DB2 data, so the column is empty and stays NULL.
             writer.writerow([
-                name, begin_time, project_id,
+                name, begin_time, timelog, project_id,
                 batch_status, comment, ispick, partner_id, username, parent_name
             ])
             row_count += 1
