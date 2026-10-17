@@ -119,3 +119,66 @@ The generic importer (`importer2026`) has the following features pre-built and r
 - **Boolean column support (2026-09-25, user-approved)**: `BatchLoader.convertToType` previously had no branch for boolean columns (no manifest had ever targeted one) and silently bound `'true'`/`'false'` strings, which Postgres rejects against a real `boolean` column. Added a `type.contains("BOOL")` branch parsing into a real `Boolean`. Use `type: "BOOLEAN"` in the manifest (or omit it and rely on auto-discovery) with a `transformScript` normalizing the source value to `'true'`/`'false'`.
 - **Reserved-word column identifiers (2026-09-25, user-approved)**: `PostgreSqlDialect`'s `generateInsert`/`generateUpdate`/`generateUpsert`/`generateInsertIfNotExists` and `ForeignKeyResolver.lookupParentId` never quoted column identifiers, so a real column named after a reserved word (e.g. `"order"` on `sample_profile_primary_sample`/`sample_profile_aliquot_sample`) broke with a Postgres syntax error. All column identifiers are now double-quoted everywhere they're interpolated into generated SQL — a no-op for every existing plain-lowercase column.
 - **`UPSERT` requires a real unique/exclusion constraint on `naturalKeys` — importer2026 doesn't create one for you.** `ON CONFLICT (...)` only works if Postgres already has a matching constraint (e.g. `sample_type_quality_metadata`'s `uq_sample_type_quality`). If your target table's `naturalKeys` don't correspond to an actual constraint (as with `sample_profile_primary_sample`/`sample_profile_aliquot_sample`, which have none), use `operation: "INSERT"` instead — `naturalKeys` is still useful (FK caching / self-join row registration still works via `RETURNING id`), you just don't get idempotent re-runs without a prior `TRUNCATE`.
+
+
+## 2026-10-17 clean local rebuild and approved source exceptions
+
+Target: local Docker `sample-service-db-1`, PostgreSQL 18, database `sample`, port 5432.
+Source: fresh read-only DB2 BCDEMO extraction. Service schema revision `a896c40` includes
+common v009 audit security. The old target was backed up locally before recreation; DB2 is
+unchanged. Current execution logs and backup are under `/private/tmp/` (not repository artifacts).
+
+The first load exposed source values rejected by the current schema. The owner explicitly chose:
+
+- For 52 samples with PLACECODE but no CONTAINER_NAME, move to the existing `Trash` container,
+  clear PLACECODE and mark Not available. Preserve the complete original rows in the exception
+  report. Of these rows, 36 were previously Available and 16 Not available.
+- For the three events sharing the target (sample, normalized event type, event time) key,
+  retain the lowest numeric source ID and quarantine the other two, including their differing
+  comments. Do not change DB2 or weaken the target unique constraint.
+
+After `make extract-data transform-data`, apply these explicitly selected policies before loading:
+
+```bash
+uv run --no-project python -m unittest tests.test_resolve_rebuild_exceptions
+uv run --no-project python scripts/resolve_rebuild_exceptions.py \
+  --report-dir export/rebuild-exceptions-2026-10-17 \
+  --move-orphan-locations-to-trash --keep-lowest-event-id
+make load-target
+make verify
+```
+
+Use a fresh report directory for a fresh export. The opt-in resolver retains original CSV copies
+and full exception CSVs, with mode 0600; reports must remain local because they contain source
+values. Rerunning already-corrected inputs does not erase exception evidence. Run after event
+filtering; normalized event-type aliases match event_transform.js. Do not rerun extraction or
+transformation between resolving and loading, as that would replace the prepared input/reports.
+These are accepted data-repair policies, not permission to weaken constraints or silently discard
+future unrelated failures. The resulting Trash location is a migration repair of current state;
+the standard initial-placement backfill does not establish its actual historical disposal time.
+
+Completed successfully: `make load-target` and `make verify` both exited 0. Resolver tests:
+3 passed (`uv run --no-project python -m unittest discover -s tests`). All 132 Liquibase
+changesets applied; 39 audit mirrors have transaction-link indexes and no raw bc_sys_tx_id.
+All application triggers are enabled; location reconciliation reports zero gaps. Backend Swagger
+responds HTTP 200 on port 8080. DB2 was read only; no source corrections were written back.
+
+Final target counts: 3,369 samples; 45 containers; 26 sample types; 16 container types;
+179 samples with extension attributes; 22 sample-quality links; 28 work lists; 458 work-list
+items; 48 historical work-list events; 7,662 sample events; 333 initial location events.
+Target profile counts include installed seed rows (11 profiles, 15 primary definitions,
+29 aliquot definitions, 6 column definitions), rather than implying every row came from DB2.
+
+Event disposition: prepared CSV contains 7,741 rows after quarantining the two conflicting
+higher-ID rows; 7,662 loaded and 79 skipped under the pre-existing onMissingFK=SKIP policy.
+These 79 reference samples absent from the exported sample set and are preserved in
+`export/rebuild-exceptions-2026-10-17/legacy_event_missing_samples.csv`. The two unique-key
+conflicts are in `legacy_event_duplicate_keys.csv`; the 52 original sample location/status
+rows are in `sample_orphan_locations.csv`, alongside complete original input copies. Direct
+post-load checks confirmed all 52 are in Trash, unavailable and without a place code.
+
+Recovery dump: `/private/tmp/sample-before-rebuild.dump` (local, mode 0600). Diagnostic logs:
+`/private/tmp/sample-db2-extract.log`, `/private/tmp/sample-db2-load-final.log`,
+`/private/tmp/sample-db2-verify.log` and `/private/tmp/sample-backend-rebuild.log`.
+No credentials or source row values are committed. The backend remains running with dev
+transaction inspection enabled; the UI process was not restarted.
