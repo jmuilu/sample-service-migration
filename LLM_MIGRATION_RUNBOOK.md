@@ -218,6 +218,13 @@ Scratch test: `sample_reload` (same container, built from sample-service `fhir-u
 their task, 14 identifier sources, 47 term mappings, 21 unit rows (3,357 of 3,369 samples get a specimen type).
 The QA database was not touched.
 
+**QA reloaded 2026-10-22** (owner's go-ahead): backup `/private/tmp/sample-reload-2026-10-22/sample-before-reload.dump`
+(local, mode 0600); `sample` dropped and recreated (owner `sample_svc`, `create` on `public`), rebuilt by Liquibase from
+sample-service `fhir-update` 8d57df2 (dev profile, 140 changesets), then `make load-target` and `make verify` with the same
+prepared inputs as the scratch test: both exited 0, every check passed, counts as the scratch test with the FFPE rows
+(47 term mappings, 21 unit rows). The backend was not started. Logs: `qa-liquibase.log`, `qa-load.log`, `qa-verify.log`
+in the same directory.
+
 Known, unchanged by this work: `seed_qualities.sql` and the audit rows of the location backfill are logged as
 `UNSPECIFIED`, not `MIGRATION` (the backfill's events link to its own `MIGRATION` row, their audit mirror to a second,
 undeclared row); QA shows the same.
