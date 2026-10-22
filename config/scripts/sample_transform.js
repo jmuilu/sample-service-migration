@@ -16,3 +16,18 @@ function transformStatus(status) {
     
     throw new Error("Invalid SAMPLE_STATUS value: '" + status + "' (normalized: '" + normalized + "')");
 }
+
+/**
+ * Normalizes the legacy SOURCE into a sample.cv_identifier_source term (sample-service ADR 0049, todo D53):
+ * trimmed, upper case, inner whitespace as '_', so 'manual' and 'MANUAL' are one source. Blank stays NULL.
+ * Must agree with normalize_source in scripts/generate_identifier_sources.py, which builds the vocabulary.
+ * @param {string} source - The SOURCE value from DB2
+ * @returns {string|null} The identifier source term
+ */
+function transformIdentifierSource(source) {
+    if (source === null || source === undefined) {
+        return null;
+    }
+    var normalized = source.toString().trim().toUpperCase().replace(/\s+/g, '_');
+    return normalized === "" ? null : normalized;
+}

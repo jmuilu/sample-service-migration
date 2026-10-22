@@ -1,3 +1,4 @@
+import csv
 import sys
 import os
 import ibm_db
@@ -6,9 +7,14 @@ import psycopg2
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from scripts.db2_config import connect_db2
 
-pg_conn_str = "host='{}' port={} dbname='sample' user='{}' password='{}'".format(
+pg_conn_str = "host='{}' port={} dbname='{}' user='{}' password='{}'".format(
     os.environ.get("PG_HOST", "localhost"), os.environ.get("PG_PORT", "5432"),
+    os.environ.get("PG_DATABASE", "sample"),
     os.environ.get("PG_USER", "dbadmin"), os.environ.get("PG_PASSWORD", "dbadmin"))
+# The prepared input of the work_list_event load: the reconstructed lifecycle plus the terminal events that
+# complete_work_list_events.py added from BATCH_LIST.END_TIME (sample-service todo D51).
+EVENTS_CSV = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                          "export", "work_list_event.csv")
 
 def run_validation():
     print("======================================================================")
@@ -93,9 +99,14 @@ def run_validation():
         
         pg_cur.execute("SELECT COUNT(*) FROM sample.work_list_event")
         pg_event_cnt = pg_cur.fetchone()[0]
-        
-        print(f"Expected DB2 events (reconstructed): {db2_event_cnt} | PG work_list_event: {pg_event_cnt}")
-        if db2_event_cnt == pg_event_cnt:
+
+        with open(EVENTS_CSV, encoding="utf-8", newline="") as f:
+            csv_event_cnt = sum(1 for _ in csv.DictReader(f))
+        added_cnt = csv_event_cnt - db2_event_cnt
+
+        print(f"Expected DB2 events (reconstructed): {db2_event_cnt} + terminal events from END_TIME: {added_cnt} "
+              f"| prepared CSV: {csv_event_cnt} | PG work_list_event: {pg_event_cnt}")
+        if added_cnt >= 0 and csv_event_cnt == pg_event_cnt:
             print("✓ Event counts match.")
         else:
             print("✗ Event counts MISMATCH! (Event migration might not be executed or is incomplete)")
@@ -166,6 +177,38 @@ def run_validation():
                 failed = True
         except Exception as e:
             print(f"✗ Parent work list validation failed: {e}")
+            failed = True
+
+        # --- Check 6: Finished lists have their terminal event (sample-service todo D51) ---
+        print("\n--- CHECK 6: Terminal Events of Finished Lists ---")
+        pg_cur.execute("""
+            SELECT w.name, w.list_status
+            FROM sample.work_list w
+            WHERE (w.list_status = 'COMPLETED' AND NOT EXISTS (
+                       SELECT 1 FROM sample.work_list_event e
+                       WHERE e.work_list_id = w.id AND e.event_type IN ('COMPLETED', 'DELIVERED', 'SHIPPED')))
+               OR (w.list_status = 'CANCELLED' AND NOT EXISTS (
+                       SELECT 1 FROM sample.work_list_event e
+                       WHERE e.work_list_id = w.id AND e.event_type = 'CANCELLED'))
+        """)
+        unfinished = pg_cur.fetchall()
+        if not unfinished:
+            print("✓ Every completed or cancelled list has its terminal event.")
+        else:
+            print(f"✗ {len(unfinished)} finished lists have no terminal event: {unfinished}")
+            failed = True
+
+        # --- Check 7: Every list belongs to its order (sample-service ADR 0051) ---
+        print("\n--- CHECK 7: Work List Task ---")
+        pg_cur.execute("""
+            SELECT w.name FROM sample.work_list w LEFT JOIN sample.task t ON t.id = w.task_id
+            WHERE t.id IS NULL OR t.name <> w.name
+        """)
+        without_task = pg_cur.fetchall()
+        if not without_task:
+            print("✓ Every work list has the task loaded from its batch list.")
+        else:
+            print(f"✗ {len(without_task)} work lists have no matching task: {without_task}")
             failed = True
 
         # --- Summary ---

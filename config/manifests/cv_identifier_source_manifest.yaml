@@ -1,0 +1,22 @@
+import:
+  # sample.cv_identifier_source (sample-service ADR 0049, todo D53): the customer's identifier sources, built from the
+  # distinct legacy SOURCE values by scripts/generate_identifier_sources.py. Loaded before the samples, whose source
+  # references it. INSERT_IF_NOT_EXISTS leaves the terms Liquibase seeds (BIOBANK, TUBE_BARCODE) untouched.
+  targetTable: "sample.cv_identifier_source"
+  operation: "INSERT_IF_NOT_EXISTS"
+  batchSize: 100
+  naturalKeys:
+    - "term"
+  columnMappings:
+    - csv: "TERM"
+      column: "term"
+      type: "VARCHAR"
+    - csv: "NAME"
+      column: "name"
+      type: "VARCHAR"
+    - csv: "SYSTEM_URI"
+      column: "system_uri"
+      type: "VARCHAR"
+    - csv: "DESCRIPTION"
+      column: "description"
+      type: "VARCHAR"

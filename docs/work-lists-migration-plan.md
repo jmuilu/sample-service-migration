@@ -334,14 +334,12 @@ Run the loader tool using Gradle commands, overriding the datasource driver to P
 # 2. Load Work List items
 ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/batch_sample_list.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_item_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
-# 3. Load Historical Work List events (coordinated with trigger disablers)
-# Temporarily disable trigger that auto-logs CREATED events during INSERT to avoid duplication
-psql -U dbadmin -d sample -c "ALTER TABLE sample.work_list DISABLE TRIGGER trg_work_list_event_after; TRUNCATE sample.work_list_event CASCADE;"
-
+# 3. Load Historical Work List events. Since sample-service ADR 0051 the work_list trigger writes nothing in
+# MIGRATION transactions (the importer's sessions declare MIGRATION, see the runbook), so it is no longer disabled.
+# transform-data has completed the CSV: complete_work_list_events.py adds the COMPLETED/CANCELLED event at
+# BATCH_LIST.END_TIME for a finished list whose audit has no status change (sample-service todo D51).
 ../../importer2026/gradlew -p ../../importer2026 bootRun --args='--csv=/Users/muilu/git/others/biobank-solution/sample-service-migration/export/work_list_event.csv --manifest=/Users/muilu/git/others/biobank-solution/sample-service-migration/config/manifests/work_list_event_manifest.yaml --spring.datasource.url=jdbc:postgresql://localhost:5432/sample --spring.datasource.username=dbadmin --spring.datasource.password=dbadmin --spring.datasource.driver-class-name=org.postgresql.Driver --spring.main.web-application-type=none'
 
-# Re-enable the trigger
-psql -U dbadmin -d sample -c "ALTER TABLE sample.work_list ENABLE TRIGGER trg_work_list_event_after;"
 ```
 
 ### Step 5: Sequence Reset

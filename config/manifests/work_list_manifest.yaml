@@ -40,6 +40,16 @@ import:
       type: "TIMESTAMP"
       transformScript: "config/scripts/work_list_transform.js"
       transformFunction: "transformCreated"
+    # The order the list fulfils (sample-service ADR 0051): task_manifest.yaml loads one task per batch list
+    # under the list's name, so the list resolves its task by that name.
+    - csv: "NAME"
+      column: "task_id"
+      type: "BIGINT"
+      foreignKey:
+        parentTable: "sample.task"
+        parentNaturalKey:
+          - csv: "NAME"
+            column: "name"
     - csv: "PARENT_NAME"
       column: "parent_id"
       type: "BIGINT"

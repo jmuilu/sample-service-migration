@@ -36,7 +36,7 @@ try:
         # Write headers
         writer.writerow([
             "ID", "SAMPLEID", "EVENT_TYPE", "EVENT_TIME", 
-            "TEMPERATURE", "EVENT_REASON", "COMMENT", "USERNAME", "TASK_NAME"
+            "TEMPERATURE", "EVENT_REASON", "COMMENT", "USERNAME"
         ])
         
         row_count = 0
@@ -74,12 +74,10 @@ try:
                 if '.' in event_time:
                     event_time = event_time.split('.')[0]
             
-            # Always route to SYSTEM-DEFAULT task
-            task_name = 'SYSTEM-DEFAULT'
-            
+            # No task: a legacy sample event belongs to no order (sample-service ADR 0051).
             writer.writerow([
                 id_val, sampleid, event_type, event_time,
-                temperature, event_reason, comment, username, task_name
+                temperature, event_reason, comment, username
             ])
             row_count += 1
             row = ibm_db.fetch_assoc(stmt)

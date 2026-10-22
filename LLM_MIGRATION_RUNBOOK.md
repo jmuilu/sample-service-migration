@@ -81,7 +81,7 @@ Create `config/manifests/<target_table>_manifest.yaml` mapping the CSV to Postgr
   and `sample.container`. A load-time event would carry the load time, not the time the legacy row was created, so
   `make load-target` switches the two triggers off before the containers and samples are imported and switches them on
   again right after the `sample.csv` import. It then runs `scripts/postgres/backfill_location_events.sql`: the initial
-  placement of every placed sample and container (from nothing to where it is, task `SYSTEM-DEFAULT`, time = the row's
+  placement of every placed sample and container (from nothing to where it is, no task (ADR 0051), time = the row's
   creation time, one `MIGRATION` change-log row). Safe to run again; rows that already have an event are skipped.
 - **`make verify` fails** (`scripts/validation/check_location_log.sql`) if either trigger is still disabled (a load stopped
   half-way: re-enable with `ALTER TABLE sample.sample ENABLE TRIGGER location_event_sample_trigger; ALTER TABLE sample.container
@@ -182,3 +182,42 @@ Recovery dump: `/private/tmp/sample-before-rebuild.dump` (local, mode 0600). Dia
 `/private/tmp/sample-db2-verify.log` and `/private/tmp/sample-backend-rebuild.log`.
 No credentials or source row values are committed. The backend remains running with dev
 transaction inspection enabled; the UI process was not restarted.
+
+## 2026-10-22 manifests for the ADR 0049 / ADR 0051 rebuild (sample-service todo D51, D53)
+
+The sample-service schema of ADRs 0049 and 0051 (in-place edits, rebuild only; ADR 0048) changes what the load writes:
+
+- **No migration task.** The `SYSTEM-DEFAULT` task is gone: `load-target` no longer creates it, legacy sample events and
+  the location backfill carry no task (`task_id` NULL; the reason is the `MIGRATION` transaction-log row), and
+  `export_legacy_events.py` no longer writes `TASK_NAME`.
+- **A list belongs to its order.** `work_list_manifest.yaml` maps `work_list.task_id` to the task `task_manifest.yaml`
+  loads under the list's name. List events take the same task.
+- **List lifecycle (D51).** The `work_list` trigger writes nothing in `MIGRATION` transactions, so `load-target` no longer
+  disables it or truncates `work_list_event`. `export_batch_lists.py` exports `END_TIME`; `complete_work_list_events.py`
+  (in `transform-data`, safe to rerun) adds the `COMPLETED`/`CANCELLED` event at `END_TIME` for a finished list whose
+  audit has no status change. In BCDEMO these are the 11 release lists created already completed; their end times are
+  the dates the operator entered (mostly midnight), so their `COMPLETED` precedes their `CREATED` (the recording time).
+  A finished list without `END_TIME` is reported, never given an invented time.
+- **Identifier sources (D53).** `sample.source` references `cv_identifier_source`. `generate_identifier_sources.py` builds
+  the vocabulary from the distinct legacy `SOURCE` values (trimmed, upper case, so `manual` = `MANUAL`; placeholder
+  URIs `urn:placeholder:source:<term>`); `cv_identifier_source_manifest.yaml` loads it before the samples, and
+  `transformIdentifierSource` normalizes each sample's value the same way.
+- **Terminology and units (D53).** `scripts/postgres/fhir_reference_data.sql` adds the proposal's sample-type mappings
+  and fluid-type `amount` units (owner defaults of 2026-10-21), only for terms the load created. `FFPE` is
+  formalin-fixed paraffin-embedded slides (owner, 2026-10-22): tissue specimen, `amount` in slides (`EA`). Left for the
+  terminology owner and the lab: `TS`, `EDTABUFFY`, `MWB`, `ASSAY`, `MS`, a processing code for the FFPE fixation, and
+  the units of `TS`, swab and cell types. The 9 BCDEMO FFPE samples with an amount hold 1000, which now reads as
+  1000 slides.
+- `validate_work_list_migration.py` reads `PG_DATABASE`, compares the event count with the prepared CSV and checks that
+  every finished list has its terminal event and every list its task.
+
+Scratch test: `sample_reload` (same container, built from sample-service `fhir-update` 1778562, 140 changesets), with the
+2026-10-17 prepared inputs plus a fresh read-only `export_batch_lists.py` (lists unchanged apart from the new column).
+`PG_DATABASE=sample_reload make load-target verify PSQL=... PG_URL=...` exited 0, unit tests 13 passed. Counts as on
+2026-10-17 (3,369 samples, 7,662 events, 79 skipped, 333 location events) plus 59 list events (48 + 11), 28 lists all with
+their task, 14 identifier sources, 47 term mappings, 21 unit rows (3,357 of 3,369 samples get a specimen type).
+The QA database was not touched.
+
+Known, unchanged by this work: `seed_qualities.sql` and the audit rows of the location backfill are logged as
+`UNSPECIFIED`, not `MIGRATION` (the backfill's events link to its own `MIGRATION` row, their audit mirror to a second,
+undeclared row); QA shows the same.

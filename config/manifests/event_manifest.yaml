@@ -33,14 +33,8 @@ import:
       type: "VARCHAR"
       transformScript: "config/scripts/event_transform.js"
       transformFunction: "transformEventReason"
-    - csv: "TASK_NAME"
-      column: "task_id"
-      type: "BIGINT"
-      foreignKey:
-        parentTable: "sample.task"
-        parentNaturalKey:
-          - csv: "TASK_NAME"
-            column: "name"
+    # task_id is not mapped: a legacy sample event belongs to no order, so it stays NULL (sample-service ADR 0051
+    # decision 1; the SYSTEM-DEFAULT task is gone). Why it was written is its MIGRATION transaction-log row.
     - csv: "TEMPERATURE"
       column: "temperature"
       type: "REAL"
